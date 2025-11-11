@@ -1,2 +1,7 @@
+flutter clean
 flutter pub get
-flutter run 
+🎯 Lancer émulateur
+flutter emulators --launch Medium_Phone_API_36.0
+
+🚀 Lancer app
+flutter run -d emulator-5554
