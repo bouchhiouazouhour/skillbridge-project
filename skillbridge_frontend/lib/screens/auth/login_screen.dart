@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/services/api_service.dart';
+import '../../providers/user_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_input_field.dart';
 
@@ -25,11 +27,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = false);
 
-    if (response['status'] == 'success') {
-      Navigator.pushReplacementNamed(context, '/home');
+    if (response['success'] == true && response['data'] != null) {
+      final data = response['data'] as Map<String, dynamic>;
+      final token = data['token'] as String?;
+      final user = data['user'] as Map<String, dynamic>?;
+      if (token != null && user != null) {
+        if (!mounted) return;
+        context.read<UserProvider>().setUser(token, user);
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unexpected response format.')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response['message'] ?? 'Erreur')),
+        SnackBar(
+          content: Text((response['message'] ?? 'Login failed').toString()),
+        ),
       );
     }
   }
@@ -43,8 +58,10 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text("Bienvenue sur SkillBridge",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const Text(
+                "Bienvenue sur SkillBridge",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 20),
               CustomInputField(controller: _emailController, hintText: "Email"),
               const SizedBox(height: 10),
