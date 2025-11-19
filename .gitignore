@@ -1,5 +1,5 @@
 
-mobile/backend/.env
-mobile/backend/vendor/
+mobile-backend/.env
+mobile-backend/vendor/
 mobile/.dart_tool/
 mobile/build/
