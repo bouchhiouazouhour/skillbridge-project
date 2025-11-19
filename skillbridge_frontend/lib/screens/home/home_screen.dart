@@ -7,7 +7,19 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Welcome to SkillBridge")),
-      body: const Center(child: Text("You are logged in!")),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("You are logged in!"),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pushNamed('/optimize'),
+              child: const Text('Start now: Optimize your CV'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -5,13 +5,12 @@ import 'package:skillbridge_frontend/screens/auth/login_screen.dart';
 import 'package:skillbridge_frontend/screens/auth/register_screen.dart';
 import 'package:skillbridge_frontend/screens/auth/splash_screen.dart';
 import 'package:skillbridge_frontend/screens/home/home_screen.dart';
+import 'package:skillbridge_frontend/screens/optimize/optimize_screen.dart';
 
 void main() {
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => UserProvider())],
       child: const MyApp(),
     ),
   );
@@ -25,9 +24,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'SkillBridge',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
 
       // 🟢 Voici les routes à bien déclarer
       initialRoute: '/',
@@ -36,6 +33,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
+        '/optimize': (context) => const OptimizeScreen(),
       },
     );
   }

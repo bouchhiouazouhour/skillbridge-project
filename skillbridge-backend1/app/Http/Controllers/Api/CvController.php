@@ -1,97 +1,113 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Cv;
-use Symfony\Component\Process\Process;
-use Symfony\Component\Process\Exception\ProcessFailedException;
+use App\Services\CvAnalyzer;
+use Smalot\PdfParser\Parser as PdfParser;
 
 class CvController extends Controller
 {
-    public function uploadCv(Request $request)
+    /**
+     * Analyze uploaded CV and return heuristic scores and suggestions.
+     * Accepts: multipart/form-data with field name "file".
+     * Supported types: txt, pdf, docx (legacy .doc not supported).
+     */
+    public function analyze(Request $request)
     {
-        $request->validate([
-            'cv' => 'required|file|mimes:pdf,doc,docx|max:5120' // 5MB
+        $validated = $request->validate([
+            'file' => 'required|file|max:5120|mimes:txt,pdf,docx', // 5MB
         ]);
 
-        $file = $request->file('cv');
-        $path = $file->store('cvs', 'public'); // stocke dans storage/app/public/cvs
-        $fullPath = storage_path('app/public/' . $path);
+        $file = $validated['file'];
 
-        // Appel du script Python (sécurisé)
-        $python = env('PYTHON_PATH', 'python3');
-        $script = base_path('nlp/analyze_cv.py'); // crée ce fichier (voir plus bas)
+        // Extract text content by file type
+        $ext = strtolower($file->getClientOriginalExtension());
+        $text = $this->extractText($file->getRealPath(), $ext);
 
-        $process = new Process([$python, $script, $fullPath]);
-        $process->setTimeout(60); // 60s, adapter si besoin
+        // Heuristic section checks
+        $sections = [
+            'Experience', 'Education', 'Skills', 'Certifications', 'Languages'
+        ];
+        $keywords = [
+            'Experience' => ['experience', 'worked', 'responsible', 'project'],
+            'Education' => ['bachelor', 'master', 'university', 'college'],
+            'Skills' => ['skills', 'stack', 'tools', 'technologies'],
+            'Certifications' => ['certified', 'certificate', 'certification'],
+            'Languages' => ['english', 'arabic', 'french', 'language'],
+        ];
 
-        try {
-            $process->mustRun();
-            $output = $process->getOutput();
-            $result = json_decode($output, true);
-        } catch (ProcessFailedException $e) {
-            // si erreur d'analyse -> renvoyer message et éventuellement supprimer le fichier
-            return response()->json(['message' => 'Erreur d’analyse', 'error' => $e->getMessage()], 500);
+        $lower = mb_strtolower($text);
+        $subScores = [];
+        $missing = [];
+        foreach ($sections as $sec) {
+            $hits = 0;
+            foreach (($keywords[$sec] ?? []) as $w) {
+                if ($w !== '' && str_contains($lower, $w)) {
+                    $hits++;
+                }
+            }
+            $score = min(1.0, $hits / max(1, count($keywords[$sec] ?? [])));
+            $subScores[$sec] = round($score, 2);
+            if ($score < 0.3) $missing[] = $sec;
         }
 
-        // Sauvegarder l'enregistrement CV
-        $cv = Cv::create([
-            'user_id' => $request->user()->id,
-            'chemin_fichier' => $path,
-            'score' => $result['score'] ?? null,
-        ]);
+        $suggestions = [];
+        foreach ($missing as $m) {
+            $suggestions[] = "Consider adding or improving your $m section.";
+        }
+
+        // Lightweight NLP
+        $nlp = (new CvAnalyzer())->analyze($text);
 
         return response()->json([
-            'keywords' => $result['keywords'] ?? [],
-            'missing_sections' => $result['missing_sections'] ?? [],
-            'score' => $result['score'] ?? null,
-            'cv' => $cv
-        ]);
+            'success' => true,
+            'data' => [
+                'sub_scores' => array_merge($subScores, [
+                    'Readability' => $nlp['readability'],
+                ]),
+                'suggestions' => array_values($suggestions + $nlp['warnings']),
+                'nlp' => [
+                    'word_count' => $nlp['word_count'],
+                    'sentence_count' => $nlp['sentence_count'],
+                    'readability' => $nlp['readability'],
+                    'top_keywords' => $nlp['top_keywords'],
+                ],
+            ],
+        ], 201);
     }
-}
 
-
-class CvController extends Controller
-{
-    public function uploadCv(Request $request)
+    /**
+     * Extract text from txt/pdf/docx files.
+     */
+    protected function extractText(string $path, string $ext): string
     {
-        $request->validate([
-            'cv' => 'required|file|mimes:pdf,doc,docx|max:5120' // 5MB
-        ]);
-
-        $file = $request->file('cv');
-        $path = $file->store('cvs', 'public'); // stocke dans storage/app/public/cvs
-        $fullPath = storage_path('app/public/' . $path);
-
-        // Appel du script Python (sécurisé)
-        $python = env('PYTHON_PATH', 'python3');
-        $script = base_path('nlp/analyze_cv.py'); // crée ce fichier (voir plus bas)
-
-        $process = new Process([$python, $script, $fullPath]);
-        $process->setTimeout(60); // 60s, adapter si besoin
-
         try {
-            $process->mustRun();
-            $output = $process->getOutput();
-            $result = json_decode($output, true);
-        } catch (ProcessFailedException $e) {
-            // si erreur d'analyse -> renvoyer message et éventuellement supprimer le fichier
-            return response()->json(['message' => 'Erreur d’analyse', 'error' => $e->getMessage()], 500);
+            if ($ext === 'txt') {
+                return (string) file_get_contents($path);
+            }
+            if ($ext === 'pdf') {
+                $parser = new PdfParser();
+                $pdf = $parser->parseFile($path);
+                return trim($pdf->getText());
+            }
+            if ($ext === 'docx') {
+                if (class_exists('ZipArchive')) {
+                    $zip = new \ZipArchive();
+                    if ($zip->open($path) === true) {
+                        $xml = $zip->getFromName('word/document.xml') ?: '';
+                        $zip->close();
+                        $xml = preg_replace('/<w:p[^>]*>/', "\n", $xml) ?? '';
+                        $text = strip_tags($xml);
+                        return trim(html_entity_decode($text, ENT_QUOTES | ENT_XML1));
+                    }
+                }
+                return '';
+            }
+        } catch (\Throwable $e) {
+            return '';
         }
-
-        // Sauvegarder l'enregistrement CV
-        $cv = Cv::create([
-            'user_id' => $request->user()->id,
-            'chemin_fichier' => $path,
-            'score' => $result['score'] ?? null,
-        ]);
-
-        return response()->json([
-            'keywords' => $result['keywords'] ?? [],
-            'missing_sections' => $result['missing_sections'] ?? [],
-            'score' => $result['score'] ?? null,
-            'cv' => $cv
-        ]);
+        return '';
     }
 }
