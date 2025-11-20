@@ -9,6 +9,9 @@ android {
     namespace = "com.example.skillbridge_frontend"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    
+    compileSdkVersion 33
+    minSdkVersion 21
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
