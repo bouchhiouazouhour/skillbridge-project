@@ -22,6 +22,13 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar',
+        'summary',
+        'title',
+        'phone',
+        'linkedin',
+        'location',
+        'status',
     ];
 
     /**
@@ -46,4 +53,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function experiences() { return $this->hasMany(Experience::class); }
+    public function educations() { return $this->hasMany(Education::class); }
+    public function projects() { return $this->hasMany(Project::class); }
+    public function skills() { return $this->hasMany(Skill::class); }
+    public function certifications() { return $this->hasMany(Certification::class); }
+
 }

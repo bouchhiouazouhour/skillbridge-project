@@ -14,9 +14,15 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|unique:users',
+            'email' => 'required|string|email|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
+        ], [
+            'email.unique' => 'Cet email est déjà utilisé.',
+            'email.email' => 'L’email n’est pas valide.',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
+            'password.min' => 'Le mot de passe doit contenir au moins 6 caractères.'
         ]);
+
 
         $user = User::create([
             'name' => $request->name,
