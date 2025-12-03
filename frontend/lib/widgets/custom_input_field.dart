@@ -9,7 +9,7 @@ class CustomInputField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.hintText,
-    this.obscureText = false,
+    this.obscureText = false, String? errorText, required String? Function(dynamic value) validator,
   });
 
   @override

@@ -17,24 +17,55 @@
     bool isLoading = false;
 
     void register() async {
+      if (nameCtrl.text.isEmpty ||
+          emailCtrl.text.isEmpty ||
+          passCtrl.text.isEmpty ||
+          confirmCtrl.text.isEmpty) {
+
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Tous les champs sont obligatoires")));
+        return;
+      }
+
+      if (!emailCtrl.text.contains("@")) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Email non valide")));
+        return;
+      }
+
+      if (passCtrl.text != confirmCtrl.text) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Les mots de passe ne correspondent pas")));
+        return;
+      }
+
       setState(() => isLoading = true);
+
       final response = await ApiService.register(
         nameCtrl.text,
         emailCtrl.text,
         passCtrl.text,
         confirmCtrl.text,
       );
-      bool success = response['status'] == 'success';
+
       setState(() => isLoading = false);
 
-      if (success) {
+      if (response['status'] == 'success') {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Registration successful")));
+          const SnackBar(content: Text("Inscription réussie")),
+        );
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+
+      } else if (response['errors']?['email'] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['errors']['email'][0])),
+        );
+
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Registration failed")));
+          SnackBar(content: Text(response['message'] ?? "Erreur d'inscription")),
+        );
       }
     }
 
