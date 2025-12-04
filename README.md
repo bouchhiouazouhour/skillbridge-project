@@ -99,7 +99,12 @@ Skill/
    ```bash
    flutter pub get
    ```
-3. Run the application:
+3. Configure the API URL (optional, defaults to localhost):
+   ```bash
+   # For custom backend URL
+   flutter run --dart-define=API_BASE_URL=http://your-backend-url/api
+   ```
+4. Run the application:
    ```bash
    flutter run
    ```

@@ -4,10 +4,11 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user.dart';
 import '../models/cv_analysis.dart';
+import '../config/app_config.dart';
 
 class ApiService {
-  // Change this to your backend URL
-  static const String baseUrl = 'http://localhost:8000/api';
+  // Use configurable base URL from app config
+  static String get baseUrl => AppConfig.apiBaseUrl;
   final storage = const FlutterSecureStorage();
 
   Future<String?> getToken() async {

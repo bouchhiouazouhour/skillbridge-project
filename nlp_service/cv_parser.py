@@ -34,12 +34,15 @@ class CVParser:
             with pdfplumber.open(file_path) as pdf:
                 for page in pdf.pages:
                     text += page.extract_text() or ""
-        except Exception:
-            # Fallback to PyPDF2
-            with open(file_path, 'rb') as file:
-                reader = PyPDF2.PdfReader(file)
-                for page in reader.pages:
-                    text += page.extract_text() or ""
+        except (IOError, ValueError, KeyError) as e:
+            # Fallback to PyPDF2 for specific PDF parsing errors
+            try:
+                with open(file_path, 'rb') as file:
+                    reader = PyPDF2.PdfReader(file)
+                    for page in reader.pages:
+                        text += page.extract_text() or ""
+            except Exception as fallback_error:
+                raise ValueError(f"Failed to extract text from PDF: {str(fallback_error)}")
         return text
     
     def _extract_docx_text(self, file_path: str) -> str:

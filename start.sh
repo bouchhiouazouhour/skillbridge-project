@@ -31,6 +31,10 @@ echo "✅ All prerequisites found"
 # Start Backend
 echo ""
 echo "🔧 Starting Laravel Backend..."
+if [ ! -d "backend" ]; then
+    echo "❌ Backend directory not found"
+    exit 1
+fi
 cd backend
 if [ ! -f ".env" ]; then
     echo "⚠️  No .env file found. Copying from .env.example..."

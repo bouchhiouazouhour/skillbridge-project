@@ -13,7 +13,7 @@ class CVController extends Controller
     public function upload(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'cv' => 'required|file|mimes:pdf,doc,docx|max:10240', // 10MB max
+            'cv' => 'required|file|mimes:pdf,docx|max:10240', // 10MB max, PDF and DOCX only
         ]);
 
         if ($validator->fails()) {

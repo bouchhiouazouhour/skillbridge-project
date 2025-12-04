@@ -35,10 +35,18 @@ flutter run
 ```
 
 **Configuration:**
-- Edit `lib/services/api_service.dart`
-- Change `baseUrl` to your backend URL:
-  ```dart
-  static const String baseUrl = 'http://your-backend-url/api';
+- The API URL is configurable via build arguments
+- For development (localhost):
+  ```bash
+  flutter run
+  ```
+- For custom backend URL:
+  ```bash
+  flutter run --dart-define=API_BASE_URL=http://your-backend-url/api
+  ```
+- For production builds:
+  ```bash
+  flutter build apk --dart-define=API_BASE_URL=https://api.yourdomain.com/api
   ```
 
 ### 3. Setup Laravel Backend
