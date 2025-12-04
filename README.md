@@ -1,6 +1,27 @@
 # SkillBridge - AI-Powered CV Optimization Application
 
+![Flutter](https://img.shields.io/badge/Flutter-3.9.2-blue?logo=flutter)
+![Laravel](https://img.shields.io/badge/Laravel-10.x-red?logo=laravel)
+![Python](https://img.shields.io/badge/Python-3.12-yellow?logo=python)
+![License](https://img.shields.io/badge/License-Educational-green)
+
 SkillBridge is a comprehensive CV optimization application that helps users improve their resumes through AI/NLP analysis. The application provides feedback on skills, missing sections, ATS readability, and actionable suggestions for improvement.
+
+## 🚀 Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/AmirMouelhi/Skill.git
+cd Skill
+
+# Quick start all services
+./start.sh
+
+# Or use Docker
+docker-compose up -d
+```
+
+See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions.
 
 ## Architecture
 

@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: skillbridge_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: skillbridge
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: skillbridge_user
+      MYSQL_PASSWORD: skillbridge_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - skillbridge_network
+
+  # Laravel Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skillbridge_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/var/www/html
+      - backend_storage:/var/www/html/storage
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: skillbridge
+      DB_USERNAME: skillbridge_user
+      DB_PASSWORD: skillbridge_password
+      NLP_SERVICE_URL: http://nlp:5000
+    depends_on:
+      - db
+    networks:
+      - skillbridge_network
+
+  # Python NLP Service
+  nlp:
+    build:
+      context: ./nlp_service
+      dockerfile: Dockerfile
+    container_name: skillbridge_nlp
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./nlp_service:/app
+    networks:
+      - skillbridge_network
+
+volumes:
+  db_data:
+  backend_storage:
+
+networks:
+  skillbridge_network:
+    driver: bridge
