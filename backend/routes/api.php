@@ -15,12 +15,17 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/upload-cv', [CvController::class, 'uploadCv']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', [AuthController::class, 'user']);
 
     Route::get('profile', [ProfileController::class, 'show']);
     Route::put('profile', [ProfileController::class, 'update']);
 
+    // CV upload and analysis
+    Route::post('cvs/upload', [CVController::class, 'upload']);
+     Route::get('/cvs', [CVController::class, 'index']);
+    Route::get('/cv/{id}', [CVController::class, 'show']);
+    Route::get('/cv/{id}/download', [CVController::class, 'download']);
     // experiences
     Route::get('experiences', [ExperiencesController::class, 'index']);
     Route::post('experiences', [ExperiencesController::class, 'store']);
