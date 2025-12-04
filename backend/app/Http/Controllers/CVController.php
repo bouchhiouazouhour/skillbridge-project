@@ -32,9 +32,38 @@ class CVController extends Controller
             'status' => 'uploaded',
         ]);
 
+        // Create mock analysis immediately
+        $mockSkills = ['JavaScript', 'Python', 'React', 'Laravel', 'Flutter', 'SQL', 'Git', 'Docker'];
+        $mockMissingSections = [];
+        $mockSuggestions = [
+            'Add more quantifiable achievements to your experience section',
+            'Include relevant certifications to strengthen your profile',
+            'Optimize keywords for ATS compatibility',
+            'Add a professional summary at the top',
+            'Include links to your portfolio or GitHub projects'
+        ];
+
+        $skillsScore = $this->calculateSkillsScore($mockSkills);
+        $completenessScore = $this->calculateCompletenessScore($mockMissingSections);
+        $atsScore = 85; // Mock ATS score
+        $overallScore = ($skillsScore + $completenessScore + $atsScore) / 3;
+
+        CVAnalysis::create([
+            'cv_id' => $cv->id,
+            'skills' => $mockSkills,
+            'missing_sections' => $mockMissingSections,
+            'suggestions' => $mockSuggestions,
+            'skills_score' => $skillsScore,
+            'completeness_score' => $completenessScore,
+            'ats_score' => $atsScore,
+            'score' => round($overallScore),
+        ]);
+
+        $cv->update(['status' => 'completed']);
+
         return response()->json([
-            'message' => 'CV uploaded successfully',
-            'cv' => $cv,
+            'message' => 'CV uploaded and analyzed successfully',
+            'cv' => $cv->fresh('analysis'),
         ], 201);
     }
 

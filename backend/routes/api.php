@@ -10,12 +10,18 @@ use App\Http\Controllers\CVController;
 |--------------------------------------------------------------------------
 */
 
+// Health check
+Route::get('/', function () {
+    return response()->json(['message' => 'SkillBridge API is running', 'status' => 'ok']);
+});
+
 // Authentication routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/profile', [AuthController::class, 'profile']);
     
     // CV Management routes
     Route::post('/cv/upload', [CVController::class, 'upload']);

@@ -23,6 +23,6 @@ class CV extends Model
 
     public function analysis()
     {
-        return $this->hasOne(CVAnalysis::class);
+        return $this->hasOne(CVAnalysis::class, 'cv_id');
     }
 }

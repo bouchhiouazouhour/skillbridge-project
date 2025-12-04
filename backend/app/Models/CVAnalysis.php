@@ -27,6 +27,6 @@ class CVAnalysis extends Model
 
     public function cv()
     {
-        return $this->belongsTo(CV::class);
+        return $this->belongsTo(CV::class, 'cv_id');
     }
 }

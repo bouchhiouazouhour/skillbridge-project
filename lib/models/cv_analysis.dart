@@ -22,15 +22,32 @@ class CVAnalysis {
   });
 
   factory CVAnalysis.fromJson(Map<String, dynamic> json) {
+    // Parse suggestions - handle both string array and object array
+    List<Suggestion> parsedSuggestions = [];
+    if (json['suggestions'] != null) {
+      final suggestionsList = json['suggestions'] as List<dynamic>;
+      parsedSuggestions = suggestionsList.map((s) {
+        if (s is String) {
+          // Convert string to Suggestion object
+          return Suggestion(type: 'general', priority: 'medium', message: s);
+        } else if (s is Map<String, dynamic>) {
+          return Suggestion.fromJson(s);
+        } else {
+          return Suggestion(
+            type: 'general',
+            priority: 'medium',
+            message: s.toString(),
+          );
+        }
+      }).toList();
+    }
+
     return CVAnalysis(
       id: json['id'] ?? 0,
       cvId: json['cv_id'] ?? 0,
       skills: List<String>.from(json['skills'] ?? []),
       missingSections: List<String>.from(json['missing_sections'] ?? []),
-      suggestions: (json['suggestions'] as List<dynamic>?)
-              ?.map((s) => Suggestion.fromJson(s as Map<String, dynamic>))
-              .toList() ??
-          [],
+      suggestions: parsedSuggestions,
       score: json['score'] ?? 0,
       skillsScore: json['skills_score'] ?? 0,
       completenessScore: json['completeness_score'] ?? 0,

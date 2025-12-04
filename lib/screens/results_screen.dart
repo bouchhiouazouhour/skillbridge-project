@@ -60,9 +60,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(
-                color: Colors.blue.shade700,
-              ),
+              CircularProgressIndicator(color: Colors.blue.shade700),
               const SizedBox(height: 24),
               const Text(
                 'Analyzing your CV...',
@@ -86,23 +84,26 @@ class _ResultsScreenState extends State<ResultsScreen> {
           backgroundColor: Colors.red,
           foregroundColor: Colors.white,
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              const Text(
-                'Failed to load results',
-                style: TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.grey),
-                textAlign: TextAlign.center,
-              ),
-            ],
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Failed to load results',
+                  style: TextStyle(fontSize: 18),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -153,10 +154,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     const SizedBox(height: 8),
                     Text(
                       'Overall Score: ${_analysis?.score ?? 0}/100',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        color: Colors.white,
-                      ),
+                      style: const TextStyle(fontSize: 20, color: Colors.white),
                     ),
                   ],
                 ),
@@ -166,10 +164,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             // Score breakdown
             const Text(
               'Score Breakdown',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildScoreCard(
@@ -197,10 +192,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             if (_analysis?.skills.isNotEmpty ?? false) ...[
               const Text(
                 'Identified Skills',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               Wrap(
@@ -208,10 +200,12 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 runSpacing: 8,
                 children: _analysis!.skills
                     .take(10)
-                    .map((skill) => Chip(
-                          label: Text(skill),
-                          backgroundColor: Colors.blue.shade100,
-                        ))
+                    .map(
+                      (skill) => Chip(
+                        label: Text(skill),
+                        backgroundColor: Colors.blue.shade100,
+                      ),
+                    )
                     .toList(),
               ),
               const SizedBox(height: 24),
@@ -220,58 +214,56 @@ class _ResultsScreenState extends State<ResultsScreen> {
             if (_analysis?.missingSections.isNotEmpty ?? false) ...[
               const Text(
                 'Missing Sections',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              ..._analysis!.missingSections.map((section) => Card(
-                    color: Colors.orange.shade50,
-                    child: ListTile(
-                      leading: const Icon(Icons.warning, color: Colors.orange),
-                      title: Text(
-                        'Missing: ${section.toUpperCase()}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text('Consider adding a $section section'),
+              ..._analysis!.missingSections.map(
+                (section) => Card(
+                  color: Colors.orange.shade50,
+                  child: ListTile(
+                    leading: const Icon(Icons.warning, color: Colors.orange),
+                    title: Text(
+                      'Missing: ${section.toUpperCase()}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  )),
+                    subtitle: Text('Consider adding a $section section'),
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
             ],
             // Suggestions
             if (_analysis?.suggestions.isNotEmpty ?? false) ...[
               const Text(
                 'Improvement Suggestions',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              ..._analysis!.suggestions.map((suggestion) => Card(
-                    child: ExpansionTile(
-                      leading: Icon(
-                        _getPriorityIcon(suggestion.priority),
-                        color: _getPriorityColor(suggestion.priority),
-                      ),
-                      title: Text(suggestion.message),
-                      subtitle: Text('Priority: ${suggestion.priority}'),
-                      children: [
-                        if (suggestion.example != null)
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              suggestion.example!,
-                              style: const TextStyle(
-                                fontStyle: FontStyle.italic,
-                                color: Colors.grey,
-                              ),
+              ..._analysis!.suggestions.map(
+                (suggestion) => Card(
+                  child: ExpansionTile(
+                    leading: Icon(
+                      _getPriorityIcon(suggestion.priority),
+                      color: _getPriorityColor(suggestion.priority),
+                    ),
+                    title: Text(suggestion.message),
+                    subtitle: Text('Priority: ${suggestion.priority}'),
+                    children: [
+                      if (suggestion.example != null)
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            suggestion.example!,
+                            style: const TextStyle(
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey,
                             ),
                           ),
-                      ],
-                    ),
-                  )),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
             ],
             // View Insights Button
@@ -284,10 +276,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 icon: const Icon(Icons.insights),
                 label: const Text(
                   'View Detailed Insights',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade700,
@@ -328,10 +317,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 icon: const Icon(Icons.download),
                 label: const Text(
                   'Export Optimized CV',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.blue.shade700,

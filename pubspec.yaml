@@ -39,7 +39,7 @@ dependencies:
   http: ^1.1.0
   
   # File picker for CV upload
-  file_picker: ^6.1.1
+  file_picker: ^8.0.0
   
   # State management
   provider: ^6.1.1

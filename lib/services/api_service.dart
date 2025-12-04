@@ -41,15 +41,14 @@ class ApiService {
 
   // Authentication
   Future<Map<String, dynamic>> register(
-      String name, String email, String password) async {
+    String name,
+    String email,
+    String password,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/register'),
       headers: await getHeaders(),
-      body: jsonEncode({
-        'name': name,
-        'email': email,
-        'password': password,
-      }),
+      body: jsonEncode({'name': name, 'email': email, 'password': password}),
     );
 
     if (response.statusCode == 201) {
@@ -65,10 +64,7 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$baseUrl/login'),
       headers: await getHeaders(),
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-      }),
+      body: jsonEncode({'email': email, 'password': password}),
     );
 
     if (response.statusCode == 200) {
@@ -164,6 +160,27 @@ class ApiService {
       return jsonDecode(response.body);
     } else {
       throw Exception('Failed to export PDF: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserProfile() async {
+    try {
+      final token = await getToken();
+      if (token == null) return null;
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile'),
+        headers: await getHeaders(includeAuth: true),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['user'] ?? data;
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching profile: $e');
+      return null;
     }
   }
 }

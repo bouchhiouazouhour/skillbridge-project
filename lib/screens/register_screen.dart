@@ -35,13 +35,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await _apiService.register(
+      final response = await _apiService.register(
         _nameController.text.trim(),
         _emailController.text.trim(),
         _passwordController.text,
       );
 
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Welcome, ${response['user']?['name'] ?? 'User'}! Account created successfully.',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const DashboardScreen()),
@@ -49,10 +59,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMsg = e.toString().replaceAll('Exception: ', '');
+        if (errorMsg.contains('Registration failed:')) {
+          try {
+            // Try to parse error response
+            final jsonStart = errorMsg.indexOf('{');
+            if (jsonStart != -1) {
+              errorMsg = 'Registration failed. Please check your details.';
+            }
+          } catch (_) {}
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Registration failed: ${e.toString()}'),
+            content: Text(errorMsg),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -80,27 +101,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                Icon(
-                  Icons.person_add,
-                  size: 80,
-                  color: Colors.blue.shade700,
-                ),
+                Icon(Icons.person_add, size: 80, color: Colors.blue.shade700),
                 const SizedBox(height: 24),
                 const Text(
                   'Join SkillBridge',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Create an account to get started',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
