@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'cv_upload_screen.dart';
 import '../services/api_service.dart';
 import 'welcome_screen.dart';
@@ -13,11 +15,51 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   final _apiService = ApiService();
+  String? _profileImagePath;
+  String _desiredPosition = '';
+  List<dynamic> _cvHistory = [];
+  int _cvCount = 0;
+  double _avgScore = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCVHistory();
+  }
+
+  Future<void> _loadCVHistory() async {
+    try {
+      final history = await _apiService.getCVHistory();
+      setState(() {
+        _cvHistory = history;
+        _cvCount = history.length;
+
+        // Calculer la moyenne des scores
+        if (history.isNotEmpty) {
+          double totalScore = 0;
+          int scoredCVs = 0;
+          for (var cv in history) {
+            if (cv['ats_score'] != null) {
+              totalScore += (cv['ats_score'] as num).toDouble();
+              scoredCVs++;
+            }
+          }
+          _avgScore = scoredCVs > 0 ? totalScore / scoredCVs : 0.0;
+        }
+      });
+    } catch (e) {
+      print('Error loading CV history: $e');
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    // Rafraîchir les données quand on revient sur le profil
+    if (index == 1) {
+      _loadCVHistory();
+    }
   }
 
   Future<void> _logout() async {
@@ -319,17 +361,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               const SizedBox(height: 20),
               // Profile Avatar
-              CircleAvatar(
-                radius: 60,
-                backgroundColor: Colors.blue.shade700,
-                child: Text(
-                  userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                  style: const TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.blue.shade700,
+                    backgroundImage: _profileImagePath != null
+                        ? FileImage(File(_profileImagePath!))
+                        : null,
+                    child: _profileImagePath == null
+                        ? Text(
+                            userName.isNotEmpty
+                                ? userName[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
                   ),
-                ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.blue,
+                      child: IconButton(
+                        icon: const Icon(Icons.camera_alt, size: 18),
+                        color: Colors.white,
+                        padding: EdgeInsets.zero,
+                        onPressed: _pickProfileImage,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
               // User Name
@@ -346,6 +413,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 userEmail,
                 style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               ),
+              const SizedBox(height: 12),
+              // Desired Position
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.work_outline,
+                      size: 16,
+                      color: Colors.blue.shade700,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _desiredPosition.isEmpty
+                          ? 'Ajouter un poste souhaité'
+                          : _desiredPosition,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _desiredPosition.isEmpty
+                            ? Colors.grey.shade600
+                            : Colors.blue.shade700,
+                        fontWeight: _desiredPosition.isEmpty
+                            ? FontWeight.normal
+                            : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 32),
               // Stats Cards
               Row(
@@ -353,7 +458,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: _buildStatCard(
                       'CVs Uploaded',
-                      '0',
+                      '$_cvCount',
                       Icons.description,
                       Colors.blue,
                     ),
@@ -362,7 +467,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: _buildStatCard(
                       'Avg Score',
-                      'N/A',
+                      _avgScore > 0
+                          ? '${_avgScore.toStringAsFixed(1)}%'
+                          : 'N/A',
                       Icons.bar_chart,
                       Colors.green,
                     ),
@@ -385,14 +492,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 'View all your uploaded CVs',
                 () {
                   _showCVHistoryDialog();
-                },
-              ),
-              _buildProfileOption(
-                Icons.settings,
-                'Settings',
-                'App preferences and notifications',
-                () {
-                  _showSettingsDialog();
                 },
               ),
               _buildProfileOption(
@@ -486,9 +585,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Future<void> _pickProfileImage() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _profileImagePath = result.files.single.path;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Photo de profil mise à jour!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la sélection de l\'image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _showEditProfileDialog(String currentName, String currentEmail) {
     final nameController = TextEditingController(text: currentName);
     final emailController = TextEditingController(text: currentEmail);
+    final positionController = TextEditingController(text: _desiredPosition);
 
     showDialog(
       context: context,
@@ -518,9 +651,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Profile update functionality will be available soon!',
-                  style: TextStyle(color: Colors.orange, fontSize: 12),
+                TextField(
+                  controller: positionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Poste Souhaité',
+                    prefixIcon: Icon(Icons.work),
+                    border: OutlineInputBorder(),
+                    hintText: 'Ex: Développeur Full Stack',
+                  ),
                 ),
               ],
             ),
@@ -532,15 +670,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ElevatedButton(
               onPressed: () {
+                setState(() {
+                  _desiredPosition = positionController.text;
+                });
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Profile update feature coming soon!'),
-                    backgroundColor: Colors.blue,
+                    content: Text('Profil mis à jour avec succès!'),
+                    backgroundColor: Colors.green,
                   ),
                 );
               },
-              child: const Text('Save'),
+              child: const Text('Enregistrer'),
             ),
           ],
         );
@@ -560,23 +701,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Text('CV History'),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Your uploaded CVs:'),
-              const SizedBox(height: 16),
-              _buildCVHistoryItem('Resume_2024.pdf', '2 days ago', 85),
-              const SizedBox(height: 8),
-              _buildCVHistoryItem('CV_Updated.docx', '1 week ago', 78),
-              const SizedBox(height: 8),
-              _buildCVHistoryItem('Professional_CV.pdf', '2 weeks ago', 92),
-              const SizedBox(height: 16),
-              const Text(
-                'Full CV history and management coming soon!',
-                style: TextStyle(color: Colors.blue, fontSize: 12),
-              ),
-            ],
+          content: SizedBox(
+            width: double.maxFinite,
+            child: _cvHistory.isEmpty
+                ? const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.inbox, size: 48, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        'No CVs uploaded yet',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Your uploaded CVs:'),
+                      const SizedBox(height: 16),
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: _cvHistory.length,
+                          itemBuilder: (context, index) {
+                            final cv = _cvHistory[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _buildCVHistoryItem(
+                                cv['filename'] ?? 'Unknown',
+                                _formatDate(cv['created_at']),
+                                (cv['score'] ?? 0).toInt(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
           ),
           actions: [
             TextButton(
@@ -587,6 +750,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       },
     );
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return 'Unknown date';
+    try {
+      final date = DateTime.parse(dateStr);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays == 0) {
+        return 'Today';
+      } else if (difference.inDays == 1) {
+        return 'Yesterday';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else if (difference.inDays < 30) {
+        final weeks = (difference.inDays / 7).floor();
+        return '$weeks week${weeks > 1 ? 's' : ''} ago';
+      } else if (difference.inDays < 365) {
+        final months = (difference.inDays / 30).floor();
+        return '$months month${months > 1 ? 's' : ''} ago';
+      } else {
+        final years = (difference.inDays / 365).floor();
+        return '$years year${years > 1 ? 's' : ''} ago';
+      }
+    } catch (e) {
+      return 'Invalid date';
+    }
   }
 
   Widget _buildCVHistoryItem(String filename, String date, int score) {
@@ -641,62 +832,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (score >= 80) return Colors.green;
     if (score >= 60) return Colors.orange;
     return Colors.red;
-  }
-
-  void _showSettingsDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.settings, color: Colors.blue),
-              SizedBox(width: 8),
-              Text('Settings'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSettingItem(Icons.notifications, 'Notifications', true),
-              _buildSettingItem(Icons.dark_mode, 'Dark Mode', false),
-              _buildSettingItem(Icons.language, 'Language', false),
-              _buildSettingItem(Icons.security, 'Privacy', false),
-              const SizedBox(height: 16),
-              const Text(
-                'Settings configuration coming soon!',
-                style: TextStyle(color: Colors.blue, fontSize: 12),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildSettingItem(IconData icon, String title, bool isEnabled) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.blue.shade700, size: 20),
-          const SizedBox(width: 12),
-          Expanded(child: Text(title, style: const TextStyle(fontSize: 14))),
-          Switch(
-            value: isEnabled,
-            onChanged: (value) {},
-            activeColor: Colors.blue.shade700,
-          ),
-        ],
-      ),
-    );
   }
 
   void _showHelpDialog() {
