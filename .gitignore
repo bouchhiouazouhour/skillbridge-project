@@ -43,3 +43,30 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Backend Laravel
+/backend/vendor/
+/backend/node_modules/
+/backend/.env
+/backend/storage/*.key
+/backend/storage/app/*
+!/backend/storage/app/.gitkeep
+/backend/storage/framework/cache/*
+!/backend/storage/framework/cache/.gitkeep
+/backend/storage/framework/sessions/*
+!/backend/storage/framework/sessions/.gitkeep
+/backend/storage/framework/testing/*
+!/backend/storage/framework/testing/.gitkeep
+/backend/storage/framework/views/*
+!/backend/storage/framework/views/.gitkeep
+/backend/storage/logs/*
+!/backend/storage/logs/.gitkeep
+/backend/bootstrap/cache/*
+!/backend/bootstrap/cache/.gitkeep
+
+# Python NLP Service
+/nlp_service/venv/
+/nlp_service/__pycache__/
+/nlp_service/*.pyc
+/nlp_service/.pytest_cache/
+/nlp_service/.env
