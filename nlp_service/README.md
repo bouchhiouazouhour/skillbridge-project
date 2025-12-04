@@ -173,16 +173,19 @@ The service returns appropriate HTTP status codes:
 
 ## Production Deployment
 
-1. Use production WSGI server (Gunicorn, uWSGI)
-2. Set up reverse proxy (Nginx)
-3. Configure proper logging
-4. Implement rate limiting
-5. Add request authentication
-6. Use SSL/TLS
-7. Monitor service health
-8. Set up error tracking
-9. Configure CORS properly
-10. Implement caching for common requests
+1. **CRITICAL: Disable debug mode** - Set `FLASK_DEBUG=False` in production
+2. Use production WSGI server (Gunicorn, uWSGI)
+3. Set up reverse proxy (Nginx)
+4. Configure proper logging
+5. Implement rate limiting
+6. Add request authentication
+7. Use SSL/TLS
+8. Monitor service health
+9. Set up error tracking
+10. Configure CORS properly
+11. Implement caching for common requests
+
+**Security Warning:** Never run Flask with `debug=True` in production as it allows arbitrary code execution through the debugger.
 
 ## Example Usage
 
