@@ -103,6 +103,18 @@ class CVParser:
         else:
             raise ValueError("Unsupported file format")
     
+    def extract_text_from_path(self, file_path: str) -> str:
+        """
+        Public method to extract text from a file path.
+        
+        Args:
+            file_path: Path to the PDF or DOCX file
+            
+        Returns:
+            str: Extracted text from the document
+        """
+        return self._extract_text(file_path)
+    
     def _extract_pdf_text(self, file_path: str) -> str:
         """Extract text from PDF using pdfplumber"""
         text = ""

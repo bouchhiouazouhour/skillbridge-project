@@ -373,7 +373,7 @@ def match_job():
         # Extract text from CV file
         parser = CVParser()
         try:
-            cv_text = parser._extract_text(cv_file_path)
+            cv_text = parser.extract_text_from_path(cv_file_path)
         except Exception as e:
             logger.error(f"Failed to extract text from CV: {str(e)}")
             return jsonify({
@@ -460,7 +460,7 @@ IMPORTANT:
             return jsonify({
                 'success': False,
                 'error': 'Failed to parse analysis response',
-                'details': 'The AI analysis could not be processed. Please try again.'
+                'details': 'The AI returned an unexpected format. This may happen with complex job descriptions. Please try again or simplify the job description.'
             }), 500
         
         # Validate and sanitize response

@@ -57,8 +57,25 @@ class JobMatchController extends Controller
             ], 403);
         }
 
-        // Get the CV file path
+        // Get the CV file path with path traversal protection
         $cvFilePath = Storage::disk('local')->path($cv->file_path);
+        
+        // Validate the resolved path is within the storage directory
+        $storagePath = Storage::disk('local')->path('');
+        $realCvPath = realpath($cvFilePath);
+        $realStoragePath = realpath($storagePath);
+        
+        if ($realCvPath === false || $realStoragePath === false || 
+            strpos($realCvPath, $realStoragePath) !== 0) {
+            Log::warning('Potential path traversal attempt', [
+                'cv_id' => $cv->id,
+                'file_path' => $cv->file_path,
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Invalid CV file path',
+            ], 400);
+        }
 
         if (!file_exists($cvFilePath)) {
             return response()->json([
