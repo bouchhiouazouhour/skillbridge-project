@@ -7,7 +7,7 @@ import '../config/app_config.dart';
 
 class ApiService {
   // Use configurable base URL from app config
-  static String get baseUrl => AppConfig.apiBaseUrl;
+  static String get baseUrl => 'https://skillbridge-backend.onrender.com/api';
   final storage = const FlutterSecureStorage();
 
   Future<String?> getToken() async {
