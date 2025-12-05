@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'cv_upload_screen.dart';
+import 'job_offers_screen.dart';
 import '../services/api_service.dart';
 import 'welcome_screen.dart';
 
@@ -245,13 +246,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         subtitle: Text(description),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$title - Feature coming soon!'),
-              backgroundColor: color,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          if (title == 'Industry insights') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const JobOffersScreen()),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$title - Feature coming soon!'),
+                backgroundColor: color,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
         },
       ),
     );
