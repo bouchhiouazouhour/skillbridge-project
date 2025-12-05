@@ -183,4 +183,22 @@ class ApiService {
       return null;
     }
   }
+
+  Future<List<dynamic>> getCVHistory() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/cv/history'),
+        headers: await getHeaders(includeAuth: true),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['cvs'] ?? data['data'] ?? [];
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching CV history: $e');
+      return [];
+    }
+  }
 }

@@ -210,6 +210,32 @@ class CVController extends Controller
         ]);
     }
 
+    public function history()
+    {
+        $cvs = CV::where('user_id', auth()->id())
+            ->with('analysis')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($cv) {
+                return [
+                    'id' => $cv->id,
+                    'file_name' => $cv->original_name,
+                    'filename' => $cv->original_name ?? $cv->filename,
+                    'uploaded_at' => $cv->created_at,
+                    'created_at' => $cv->created_at,
+                    'status' => $cv->status,
+                    'ats_score' => $cv->analysis ? $cv->analysis->ats_score : null,
+                    'overall_score' => $cv->analysis ? $cv->analysis->overall_score : null,
+                    'score' => $cv->analysis ? $cv->analysis->score : 0,
+                ];
+            });
+
+        return response()->json([
+            'cvs' => $cvs,
+            'total' => $cvs->count(),
+        ]);
+    }
+
     public function exportPDF($id)
     {
         $cv = CV::with('analysis')->findOrFail($id);

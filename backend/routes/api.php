@@ -25,6 +25,7 @@ Route::middleware('auth:api')->group(function () {
     
     // CV Management routes
     Route::post('/cv/upload', [CVController::class, 'upload']);
+    Route::get('/cv/history', [CVController::class, 'history']);
     Route::post('/cv/analysis', [CVController::class, 'storeAnalysis']);
     Route::get('/cv/{id}/results', [CVController::class, 'getResults']);
     Route::get('/cv/{id}/score', [CVController::class, 'getScore']);
