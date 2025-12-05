@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'cv_upload_screen.dart';
 import 'job_offers_screen.dart';
+import 'update_skills_screen.dart';
+import 'networking_strategies_screen.dart';
 import '../services/api_service.dart';
 import 'welcome_screen.dart';
 
@@ -21,11 +25,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _cvHistory = [];
   int _cvCount = 0;
   double _avgScore = 0.0;
+  List<Map<String, dynamic>> _profileSkills = [];
 
   @override
   void initState() {
     super.initState();
     _loadCVHistory();
+    _loadSkills();
+  }
+
+  Future<void> _loadSkills() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final skillsJson = prefs.getString('profile_skills');
+      if (skillsJson != null) {
+        final List<dynamic> decodedSkills = jsonDecode(skillsJson);
+        setState(() {
+          _profileSkills = decodedSkills.map((skill) {
+            return Map<String, dynamic>.from(skill);
+          }).toList();
+        });
+      }
+    } catch (e) {
+      print('Error loading skills: $e');
+    }
+  }
+
+  Future<void> _saveSkills(List<Map<String, dynamic>> skills) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final skillsJson = jsonEncode(skills);
+      await prefs.setString('profile_skills', skillsJson);
+      setState(() {
+        _profileSkills = skills;
+      });
+    } catch (e) {
+      print('Error saving skills: $e');
+    }
   }
 
   Future<void> _loadCVHistory() async {
@@ -250,6 +286,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const JobOffersScreen()),
+            );
+          } else if (title == 'Update your skills') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UpdateSkillsScreen(
+                  onSkillsSaved: (skills) {
+                    _saveSkills(skills);
+                  },
+                  existingSkills: _profileSkills,
+                ),
+              ),
+            );
+          } else if (title == 'Networking strategies') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NetworkingStrategiesScreen(),
+              ),
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -485,6 +540,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
               const SizedBox(height: 32),
+              // Skills Section
+              if (_profileSkills.isNotEmpty) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'My Skills',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade700,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_profileSkills.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _profileSkills.map((skill) {
+                    final color = _getSkillLevelColor(skill['level']);
+                    return Chip(
+                      avatar: Icon(Icons.verified, size: 16, color: color),
+                      label: Text(skill['name']),
+                      backgroundColor: color.withOpacity(0.1),
+                      side: BorderSide(color: color, width: 1),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+              ],
               // Profile Options
               _buildProfileOption(
                 Icons.edit,
@@ -933,5 +1035,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  Color _getSkillLevelColor(String level) {
+    switch (level) {
+      case 'Beginner':
+        return Colors.blue;
+      case 'Intermediate':
+        return Colors.orange;
+      case 'Advanced':
+        return Colors.purple;
+      case 'Expert':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
   }
 }
