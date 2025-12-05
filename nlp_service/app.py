@@ -318,6 +318,212 @@ Return the improved CV text in a clean, well-structured format.
             'error': str(e)
         }), 500
 
+
+@app.route('/match-job', methods=['POST'])
+def match_job():
+    """
+    Compare CV against job description using Gemini AI.
+    
+    Expects:
+    - file: CV file (PDF/DOCX)
+    - job_description: Text of job posting
+    
+    Returns:
+    - match_score: 0-100
+    - match_verdict: strong/moderate/weak
+    - matching_skills: []
+    - missing_skills: []
+    - improvement_suggestions: []
+    - strengths: []
+    """
+    try:
+        # Check if file is in request
+        if 'file' not in request.files:
+            logger.warning("No file in request for job match")
+            return jsonify({
+                'success': False,
+                'error': 'No CV file provided'
+            }), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            logger.warning("Empty filename for job match")
+            return jsonify({
+                'success': False,
+                'error': 'No file selected'
+            }), 400
+        
+        # Validate file format
+        if not validate_file_format(file.filename):
+            logger.warning(f"Unsupported file format: {file.filename}")
+            return jsonify({
+                'success': False,
+                'error': 'Unsupported file format. Please upload PDF or DOCX files.'
+            }), 400
+        
+        # Get job description
+        job_description = request.form.get('job_description', '')
+        
+        if not job_description or len(job_description.strip()) < 50:
+            logger.warning("Job description too short or missing")
+            return jsonify({
+                'success': False,
+                'error': 'Job description must be at least 50 characters.'
+            }), 400
+        
+        # Parse CV to extract text
+        parser = CVParser()
+        try:
+            cv_text = parser.extract_text(file)
+        except ValueError as e:
+            logger.error(f"Failed to extract text from CV: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 400
+        
+        if not cv_text or len(cv_text.strip()) < 50:
+            logger.warning("Not enough text extracted from CV")
+            return jsonify({
+                'success': False,
+                'error': 'Could not extract enough text from the CV.'
+            }), 400
+        
+        logger.info(f"Extracted {len(cv_text)} characters from CV for job matching")
+        
+        # Truncate texts to prevent exceeding API limits
+        max_cv_length = 12000
+        max_jd_length = 5000
+        
+        if len(cv_text) > max_cv_length:
+            cv_text = cv_text[:max_cv_length] + "\n... [truncated]"
+            logger.info(f"CV text truncated to {max_cv_length} characters")
+        
+        if len(job_description) > max_jd_length:
+            job_description = job_description[:max_jd_length] + "\n... [truncated]"
+            logger.info(f"Job description truncated to {max_jd_length} characters")
+        
+        # Create prompt for job matching
+        prompt = f"""
+You are an expert career advisor and ATS specialist. Compare this CV against the job description.
+
+JOB DESCRIPTION:
+{job_description}
+
+CV CONTENT:
+{cv_text}
+
+Provide analysis in this EXACT JSON format:
+{{
+    "match_score": 85,
+    "match_verdict": "strong",
+    "matching_skills": ["skill1", "skill2"],
+    "missing_skills": ["skill3", "skill4"],
+    "improvement_suggestions": [
+        "Add project showcasing skill3",
+        "Highlight experience with skill4"
+    ],
+    "strengths": [
+        "Strong background in X",
+        "Relevant experience in Y"
+    ]
+}}
+
+Match Verdict Rules:
+- strong: 80-100% match
+- moderate: 60-79% match  
+- weak: 0-59% match
+
+Important Guidelines:
+1. Be specific about which skills match and which are missing
+2. Provide actionable improvement suggestions
+3. List real strengths from the CV that align with the job
+4. Score should realistically reflect the match quality
+5. Return ONLY valid JSON, no markdown or additional text
+"""
+        
+        # Call Gemini API
+        logger.info("Calling Gemini API for job match analysis")
+        response = model.generate_content(prompt)
+        result_text = response.text
+        
+        # Clean up response - remove markdown code blocks if present
+        if "```json" in result_text:
+            result_text = result_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in result_text:
+            result_text = result_text.split("```")[1].split("```")[0].strip()
+        
+        # Parse JSON response
+        try:
+            analysis_data = json.loads(result_text)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse Gemini response: {str(e)}")
+            logger.error(f"Raw response: {result_text[:500]}")
+            return jsonify({
+                'success': False,
+                'error': 'Failed to parse analysis response',
+                'details': 'The AI analysis could not be processed. Please try again.'
+            }), 500
+        
+        # Validate and normalize response
+        match_score = analysis_data.get('match_score', 0)
+        if not isinstance(match_score, int):
+            try:
+                match_score = int(match_score)
+            except (ValueError, TypeError):
+                match_score = 0
+        match_score = max(0, min(100, match_score))
+        
+        # Determine verdict based on score if not provided or invalid
+        match_verdict = analysis_data.get('match_verdict', '')
+        if match_verdict not in ['strong', 'moderate', 'weak']:
+            if match_score >= 80:
+                match_verdict = 'strong'
+            elif match_score >= 60:
+                match_verdict = 'moderate'
+            else:
+                match_verdict = 'weak'
+        
+        # Ensure arrays exist
+        matching_skills = analysis_data.get('matching_skills', [])
+        if not isinstance(matching_skills, list):
+            matching_skills = []
+        
+        missing_skills = analysis_data.get('missing_skills', [])
+        if not isinstance(missing_skills, list):
+            missing_skills = []
+        
+        improvement_suggestions = analysis_data.get('improvement_suggestions', [])
+        if not isinstance(improvement_suggestions, list):
+            improvement_suggestions = []
+        
+        strengths = analysis_data.get('strengths', [])
+        if not isinstance(strengths, list):
+            strengths = []
+        
+        logger.info(f"Job match analysis complete. Score: {match_score}, Verdict: {match_verdict}")
+        
+        return jsonify({
+            'success': True,
+            'analysis': {
+                'match_score': match_score,
+                'match_verdict': match_verdict,
+                'matching_skills': matching_skills,
+                'missing_skills': missing_skills,
+                'improvement_suggestions': improvement_suggestions,
+                'strengths': strengths
+            }
+        })
+        
+    except Exception as e:
+        logger.exception(f"Error in job match analysis: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'error_type': type(e).__name__
+        }), 500
+
 if __name__ == '__main__':
     # Run the Flask app
     app.run(host='0.0.0.0', port=5000, debug=True)

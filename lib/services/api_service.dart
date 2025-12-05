@@ -226,4 +226,131 @@ class ApiService {
       return [];
     }
   }
+
+  // Job Match Operations
+  Future<Map<String, dynamic>> matchJob(String jobDescription, int cvId) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/job/match'),
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['job_description'] = jobDescription;
+    request.fields['cv_id'] = cvId.toString();
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? 'Failed to analyze job match');
+    }
+  }
+
+  Future<Map<String, dynamic>> matchJobWithFile(
+      String jobDescription, PlatformFile file) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/job/match'),
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['job_description'] = jobDescription;
+
+    // Handle both web and mobile platforms
+    if (kIsWeb) {
+      if (file.bytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'cv',
+            file.bytes!,
+            filename: file.name,
+          ),
+        );
+      } else {
+        throw Exception('File bytes not available for web upload.');
+      }
+    } else {
+      if (file.path != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('cv', file.path!),
+        );
+      } else {
+        throw Exception('File path not available.');
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? 'Failed to analyze job match');
+    }
+  }
+
+  Future<void> saveJobMatch(int matchId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/job/match/$matchId/save'),
+      headers: await getHeaders(includeAuth: true),
+    );
+
+    if (response.statusCode != 200) {
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? 'Failed to save job match');
+    }
+  }
+
+  Future<List<dynamic>> getJobMatchHistory() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/job/match/history'),
+        headers: await getHeaders(includeAuth: true),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['job_matches'] ?? [];
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching job match history: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> getJobMatch(int matchId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/job/match/$matchId'),
+      headers: await getHeaders(includeAuth: true),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to get job match details');
+    }
+  }
+
+  Future<void> deleteJobMatch(int matchId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/job/match/$matchId'),
+      headers: await getHeaders(includeAuth: true),
+    );
+
+    if (response.statusCode != 200) {
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? 'Failed to delete job match');
+    }
+  }
 }
