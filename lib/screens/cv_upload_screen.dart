@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
@@ -13,7 +12,7 @@ class CVUploadScreen extends StatefulWidget {
 
 class _CVUploadScreenState extends State<CVUploadScreen> {
   final _apiService = ApiService();
-  File? _selectedFile;
+  PlatformFile? _selectedFile;
   bool _isUploading = false;
   double _uploadProgress = 0.0;
 
@@ -22,11 +21,13 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx'],
+        withData: true, // Important for web - loads file bytes
       );
 
       if (result != null) {
         setState(() {
-          _selectedFile = File(result.files.single.path!);
+          // Store the PlatformFile instead of File object
+          _selectedFile = result.files.single;
         });
       }
     } catch (e) {
@@ -182,7 +183,7 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
                       if (_selectedFile != null) ...[
                         const SizedBox(height: 8),
                         Text(
-                          _selectedFile!.path.split('/').last,
+                          _selectedFile!.name,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
