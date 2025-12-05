@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -114,48 +113,71 @@ class CVAnalysisController extends Controller
     private function performAnalysis($file)
     {
         try {
-            // Use a file stream to avoid loading large files entirely into memory
-            $fileStream = fopen($file->getRealPath(), 'r');
-            if ($fileStream === false) {
-                return [
-                    'success' => false,
-                    'error' => 'Failed to read the uploaded file.',
-                    'status_code' => 500,
-                ];
-            }
+            // Use cURL instead of Http facade to avoid Guzzle dependency
+            $ch = curl_init();
 
-            // Forward the file to the Python NLP service using streaming
-            $response = Http::timeout(120)
-                ->attach(
-                    'file',
-                    $fileStream,
-                    $file->getClientOriginalName()
-                )
-                ->post("{$this->nlpServiceUrl}/analyze-cv");
+            $cfile = new \CURLFile(
+                $file->getRealPath(),
+                $file->getMimeType(),
+                $file->getClientOriginalName()
+            );
 
-            // Close the file stream
-            if (is_resource($fileStream)) {
-                fclose($fileStream);
-            }
+            $postData = ['file' => $cfile];
 
-            // Check if the request was successful
-            if (!$response->successful()) {
-                Log::error('NLP Service error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
+            curl_setopt_array($ch, [
+                CURLOPT_URL => "{$this->nlpServiceUrl}/analyze-cv",
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $postData,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 120, // 2 minute timeout for AI analysis
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/json',
+                ],
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            // Handle cURL errors (connection issues)
+            if ($curlError) {
+                Log::error('NLP Service connection failed', [
+                    'error' => $curlError,
                 ]);
 
-                $errorData = $response->json();
-
                 return [
                     'success' => false,
-                    'error' => $errorData['error'] ?? 'Failed to analyze CV',
-                    'details' => $errorData['details'] ?? null,
-                    'status_code' => $response->status(),
+                    'error' => 'CV analysis service is currently unavailable. Please try again later.',
+                    'status_code' => 503,
                 ];
             }
 
-            $analysisResult = $response->json();
+            // Parse the response
+            $analysisResult = json_decode($response, true);
+
+            // Check if the request was successful (HTTP 2xx)
+            if ($httpCode < 200 || $httpCode >= 300) {
+                Log::error('NLP Service error', [
+                    'status' => $httpCode,
+                    'body' => $response,
+                ]);
+
+                // Handle case where response is not valid JSON
+                $errorMessage = 'Failed to analyze CV';
+                $errorDetails = null;
+                if (is_array($analysisResult)) {
+                    $errorMessage = $analysisResult['error'] ?? $errorMessage;
+                    $errorDetails = $analysisResult['details'] ?? null;
+                }
+
+                return [
+                    'success' => false,
+                    'error' => $errorMessage,
+                    'details' => $errorDetails,
+                    'status_code' => $httpCode,
+                ];
+            }
 
             // Check if the analysis was successful
             if (!isset($analysisResult['success']) || !$analysisResult['success']) {
@@ -172,17 +194,6 @@ class CVAnalysisController extends Controller
                 'analysis' => $analysisResult['analysis'],
                 'cv_length' => $analysisResult['cv_length'] ?? null,
                 'cv_preview' => $analysisResult['cv_preview'] ?? null,
-            ];
-
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('NLP Service connection failed', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return [
-                'success' => false,
-                'error' => 'CV analysis service is currently unavailable. Please try again later.',
-                'status_code' => 503,
             ];
 
         } catch (\Exception $e) {
@@ -207,19 +218,44 @@ class CVAnalysisController extends Controller
     public function healthCheck()
     {
         try {
-            $response = Http::timeout(10)->get("{$this->nlpServiceUrl}/health");
+            // Use cURL instead of Http facade to avoid Guzzle dependency
+            $ch = curl_init();
 
-            if ($response->successful()) {
+            curl_setopt_array($ch, [
+                CURLOPT_URL => "{$this->nlpServiceUrl}/health",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/json',
+                ],
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError || $httpCode < 200 || $httpCode >= 300) {
                 return response()->json([
-                    'success' => true,
-                    'nlp_service' => $response->json(),
-                ]);
+                    'success' => false,
+                    'error' => $curlError ?: 'NLP service is not responding correctly',
+                ], 503);
+            }
+
+            $data = json_decode($response, true);
+
+            // Handle JSON decode failure
+            if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'NLP service returned invalid response',
+                ], 503);
             }
 
             return response()->json([
-                'success' => false,
-                'error' => 'NLP service is not responding correctly',
-            ], 503);
+                'success' => true,
+                'nlp_service' => $data,
+            ]);
 
         } catch (\Exception $e) {
             return response()->json([
