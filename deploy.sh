@@ -127,6 +127,26 @@ setup_environment() {
     echo ""
 }
 
+validate_url() {
+    local url=$1
+    # Check if URL matches valid HTTP/HTTPS pattern
+    # This regex validates URLs like: https://example.com/api or http://localhost:8000/api
+    if [[ ! "$url" =~ ^https?://[a-zA-Z0-9][-a-zA-Z0-9._]*(:[0-9]+)?(/[a-zA-Z0-9._/-]*)?$ ]]; then
+        print_error "Invalid URL format: $url"
+        echo ""
+        echo "URL must be a valid HTTP/HTTPS URL, for example:"
+        echo "  https://api.myapp.com/api"
+        echo "  https://my-backend.railway.app/api"
+        echo "  http://localhost:8000/api"
+        exit 1
+    fi
+    
+    # Warn if using HTTP in production
+    if [[ "$url" =~ ^http:// ]] && [[ ! "$url" =~ localhost|127\.0\.0\.1|10\.0\.2\.2 ]]; then
+        print_warning "Using HTTP instead of HTTPS. For production, HTTPS is strongly recommended."
+    fi
+}
+
 build_web() {
     print_header
     
@@ -137,7 +157,11 @@ build_web() {
         exit 1
     fi
 
-    API_URL=$1
+    local API_URL="$1"
+    
+    # Validate the URL format
+    validate_url "$API_URL"
+    
     print_info "Building Flutter web with API_BASE_URL=$API_URL"
     echo ""
 
@@ -147,8 +171,8 @@ build_web() {
     # Get dependencies
     flutter pub get
 
-    # Build for web
-    flutter build web --release --dart-define=API_BASE_URL=$API_URL
+    # Build for web (properly quoted to prevent injection)
+    flutter build web --release --dart-define="API_BASE_URL=$API_URL"
 
     echo ""
     print_success "Web build completed!"
@@ -170,7 +194,11 @@ build_apk() {
         exit 1
     fi
 
-    API_URL=$1
+    local API_URL="$1"
+    
+    # Validate the URL format
+    validate_url "$API_URL"
+    
     print_info "Building Android APK with API_BASE_URL=$API_URL"
     echo ""
 
@@ -180,8 +208,8 @@ build_apk() {
     # Get dependencies
     flutter pub get
 
-    # Build APK
-    flutter build apk --release --dart-define=API_BASE_URL=$API_URL
+    # Build APK (properly quoted to prevent injection)
+    flutter build apk --release --dart-define="API_BASE_URL=$API_URL"
 
     echo ""
     print_success "APK build completed!"
