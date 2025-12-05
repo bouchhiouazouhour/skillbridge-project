@@ -4,14 +4,11 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'cv_upload_screen.dart';
-<<<<<<< HEAD
 import 'results_screen.dart';
-=======
 import 'job_offers_screen.dart';
 import 'update_skills_screen.dart';
 import 'networking_strategies_screen.dart';
 import 'job_match_screen.dart';
->>>>>>> caa2a1793e2be00f0b944ff9b7d11b689de5eba7
 import '../services/api_service.dart';
 import 'welcome_screen.dart';
 

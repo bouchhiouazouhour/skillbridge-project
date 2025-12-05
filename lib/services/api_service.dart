@@ -262,7 +262,6 @@ class ApiService {
     }
   }
 
-<<<<<<< HEAD
   Future<void> deleteCV(int cvId) async {
     try {
       final response = await http.delete(
@@ -276,7 +275,9 @@ class ApiService {
     } catch (e) {
       print('Error deleting CV: $e');
       rethrow;
-=======
+  }
+  }
+
   // Job Match Operations
   Future<Map<String, dynamic>> analyzeJobMatch({
     required int cvId,
@@ -356,7 +357,6 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to delete job match: ${response.body}');
->>>>>>> caa2a1793e2be00f0b944ff9b7d11b689de5eba7
     }
   }
 }
