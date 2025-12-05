@@ -1,13 +1,18 @@
-#flask>=3.0.0,<4.0.0
-#python-docx>=1.1.0,<2.0.0
-#PyPDF2>=3.0.0,<4.0.0
+# Flask and web dependencies
+flask>=3.0.0,<4.0.0
+python-dotenv>=1.0.0,<2.0.0
+requests>=2.31.0,<3.0.0
+
+# Google Gemini AI
+google-generativeai>=0.3.2,<1.0.0
+
+# PDF processing
+PyPDF2>=3.0.0,<4.0.0
+pdfplumber>=0.10.0,<1.0.0
+
+# DOCX processing
+python-docx>=1.1.0,<2.0.0
+
+# NLP libraries (for advanced text processing)
 spacy>=3.7.0,<4.0.0
 nltk>=3.8.0,<4.0.0
-#pdfplumber>=0.11.0,<1.0.0
-requests>=2.31.0,<3.0.0
-flask==3.0.0
-python-dotenv==1.0.0
-google-generativeai==0.3.2
-PyPDF2==3.0.1
-python-docx==1.1.0
-pdfplumber==0.10.3

@@ -1,5 +1,8 @@
 import re
-from typing import Dict, List, Any
+import io
+import tempfile
+import os
+from typing import Dict, List, Any, Union
 import PyPDF2
 import docx
 import pdfplumber
@@ -18,8 +21,81 @@ class CVParser:
             'education': self._extract_education(text),
         }
     
+    def extract_text(self, file_obj) -> str:
+        """
+        Extract text from a Flask file object (PDF or DOCX).
+        Handles file uploads directly from request without saving to disk permanently.
+        
+        Args:
+            file_obj: Flask FileStorage object from request.files
+            
+        Returns:
+            str: Extracted text from the document
+            
+        Raises:
+            ValueError: If file format is unsupported or file is corrupted/unreadable
+        """
+        if file_obj is None:
+            raise ValueError("No file provided")
+        
+        filename = file_obj.filename.lower() if file_obj.filename else ""
+        
+        if not filename:
+            raise ValueError("File has no filename")
+        
+        # Read file content into memory
+        try:
+            file_content = file_obj.read()
+            file_obj.seek(0)  # Reset file pointer for potential re-read
+        except Exception as e:
+            raise ValueError(f"Failed to read file: {str(e)}")
+        
+        if len(file_content) == 0:
+            raise ValueError("File is empty")
+        
+        # Handle based on file extension
+        if filename.endswith('.pdf'):
+            return self._extract_pdf_from_bytes(file_content)
+        elif filename.endswith(('.doc', '.docx')):
+            return self._extract_docx_from_bytes(file_content)
+        else:
+            raise ValueError(f"Unsupported file format. Please upload PDF or DOCX files. Got: {filename}")
+    
+    def _extract_pdf_from_bytes(self, file_content: bytes) -> str:
+        """Extract text from PDF bytes using pdfplumber with PyPDF2 fallback"""
+        text = ""
+        
+        # Try pdfplumber first
+        try:
+            with pdfplumber.open(io.BytesIO(file_content)) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+        except Exception:
+            # Fallback to PyPDF2
+            try:
+                reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+                for page in reader.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+            except Exception as e:
+                raise ValueError(f"Failed to extract text from PDF. The file may be corrupted or password-protected: {str(e)}")
+        
+        return text.strip()
+    
+    def _extract_docx_from_bytes(self, file_content: bytes) -> str:
+        """Extract text from DOCX bytes"""
+        try:
+            doc = docx.Document(io.BytesIO(file_content))
+            paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
+            return '\n'.join(paragraphs)
+        except Exception as e:
+            raise ValueError(f"Failed to extract text from DOCX. The file may be corrupted: {str(e)}")
+    
     def _extract_text(self, file_path: str) -> str:
-        """Extract text from PDF or DOCX file"""
+        """Extract text from PDF or DOCX file (legacy method for file paths)"""
         if file_path.endswith('.pdf'):
             return self._extract_pdf_text(file_path)
         elif file_path.endswith(('.doc', '.docx')):
