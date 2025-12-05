@@ -16,3 +16,5 @@ python-docx>=1.1.0,<2.0.0
 # NLP libraries (for advanced text processing)
 spacy>=3.7.0,<4.0.0
 nltk>=3.8.0,<4.0.0
+
+flask-cors>=4.0.0,<5.0.0
