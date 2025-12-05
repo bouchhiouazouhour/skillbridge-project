@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CV;
 use App\Models\CVAnalysis;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -29,37 +30,83 @@ class CVController extends Controller
             'filename' => $filename,
             'file_path' => $path,
             'original_name' => $file->getClientOriginalName(),
-            'status' => 'uploaded',
+            'status' => 'processing',
         ]);
 
-        // Create mock analysis immediately
-        $mockSkills = ['JavaScript', 'Python', 'React', 'Laravel', 'Flutter', 'SQL', 'Git', 'Docker'];
-        $mockMissingSections = [];
-        $mockSuggestions = [
-            'Add more quantifiable achievements to your experience section',
-            'Include relevant certifications to strengthen your profile',
-            'Optimize keywords for ATS compatibility',
-            'Add a professional summary at the top',
-            'Include links to your portfolio or GitHub projects'
-        ];
+        try {
+            // Forward file to Python NLP service for real analysis
+            $analysisController = new CVAnalysisController();
+            $analysisResult = $analysisController->analyzeFile($file);
 
-        $skillsScore = $this->calculateSkillsScore($mockSkills);
-        $completenessScore = $this->calculateCompletenessScore($mockMissingSections);
-        $atsScore = 85; // Mock ATS score
-        $overallScore = ($skillsScore + $completenessScore + $atsScore) / 3;
+            if ($analysisResult['success']) {
+                $geminiAnalysis = $analysisResult['analysis'];
 
-        CVAnalysis::create([
-            'cv_id' => $cv->id,
-            'skills' => $mockSkills,
-            'missing_sections' => $mockMissingSections,
-            'suggestions' => $mockSuggestions,
-            'skills_score' => $skillsScore,
-            'completeness_score' => $completenessScore,
-            'ats_score' => $atsScore,
-            'score' => round($overallScore),
-        ]);
+                // Extract data from Gemini response
+                $skills = $geminiAnalysis['recommended_keywords'] ?? [];
+                $missingSections = $geminiAnalysis['missing_sections'] ?? [];
 
-        $cv->update(['status' => 'completed']);
+                // Convert Gemini improvements to suggestions format
+                $suggestions = [];
+                foreach ($geminiAnalysis['improvements'] ?? [] as $improvement) {
+                    if (isset($improvement['suggestion'])) {
+                        $suggestions[] = $improvement['suggestion'];
+                    }
+                }
+
+                // Get scores from Gemini data
+                $atsScore = $geminiAnalysis['ats_compatibility_score'] ?? 70;
+                $overallScore = $geminiAnalysis['overall_score'] ?? 70;
+
+                // Calculate derived scores
+                $skillsScore = $this->calculateSkillsScore($skills);
+                $completenessScore = $this->calculateCompletenessScore($missingSections);
+
+                // Store REAL analysis from Gemini
+                CVAnalysis::create([
+                    'cv_id' => $cv->id,
+                    'skills' => $skills,
+                    'missing_sections' => $missingSections,
+                    'suggestions' => $suggestions,
+                    'skills_score' => $skillsScore,
+                    'completeness_score' => $completenessScore,
+                    'ats_score' => $atsScore,
+                    'score' => round($overallScore),
+                ]);
+
+                $cv->update(['status' => 'completed']);
+
+                Log::info('CV uploaded and analyzed successfully', [
+                    'cv_id' => $cv->id,
+                    'overall_score' => $overallScore,
+                ]);
+            } else {
+                // If analysis fails, mark as failed
+                $cv->update(['status' => 'failed']);
+
+                Log::error('CV analysis failed', [
+                    'cv_id' => $cv->id,
+                    'error' => $analysisResult['error'] ?? 'Unknown error',
+                ]);
+
+                return response()->json([
+                    'error' => 'CV analysis failed',
+                    'message' => $analysisResult['error'] ?? 'Unknown error',
+                    'details' => $analysisResult['details'] ?? null,
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            $cv->update(['status' => 'failed']);
+
+            Log::error('CV analysis exception', [
+                'cv_id' => $cv->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'CV analysis failed',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
 
         return response()->json([
             'message' => 'CV uploaded and analyzed successfully',
