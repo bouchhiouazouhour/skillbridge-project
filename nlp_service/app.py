@@ -9,7 +9,10 @@ from keyword_extractor import KeywordExtractor
 from section_detector import SectionDetector
 from ats_analyzer import ATSAnalyzer
 from suggestion_generator import SuggestionGenerator
+from flask_cors import CORS
 
+app = Flask(__name__)
+CORS(app)
 # Load environment variables
 load_dotenv()
 
