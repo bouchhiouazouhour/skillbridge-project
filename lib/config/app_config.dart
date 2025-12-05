@@ -1,11 +1,15 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 /// Application configuration
 class AppConfig {
   // API Configuration
-  // Use 10.0.2.2 for Android emulator to access host machine
-  static const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000/api',
-  );
+  // Use 10.0.2.2 for Android emulator, 127.0.0.1 for web/desktop
+  static String get apiBaseUrl {
+    if (kIsWeb) {
+      return 'http://127.0.0.1:8000/api';
+    }
+    return 'http://10.0.2.2:8000/api';
+  }
 
   // Application settings
   static const String appName = 'SkillBridge';
