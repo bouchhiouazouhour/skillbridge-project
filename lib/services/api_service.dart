@@ -112,7 +112,7 @@ class ApiService {
           ),
         );
       } else {
-        throw Exception('File bytes not available on web');
+        throw Exception('File bytes not available for web upload. Ensure withData: true is set when picking the file.');
       }
     } else {
       // For mobile/desktop: use path
@@ -121,7 +121,7 @@ class ApiService {
           await http.MultipartFile.fromPath('cv', file.path!),
         );
       } else {
-        throw Exception('File path not available');
+        throw Exception('File path not available on this platform. File path is required for mobile/desktop uploads.');
       }
     }
 
