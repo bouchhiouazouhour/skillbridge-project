@@ -2,6 +2,12 @@
 
 Python-based NLP service for CV analysis, keyword extraction, and suggestion generation.
 
+# Gemini API key limits
+model: gemini-2.5-flash
+Requests per minute: 10
+Tokens per minute (input): 250,000
+Requests per day: 250
+
 ## Features
 
 - CV Parsing (PDF and DOCX)
