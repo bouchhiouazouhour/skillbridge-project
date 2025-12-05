@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'cv_upload_screen.dart';
+import 'job_match_screen.dart';
 import '../services/api_service.dart';
 import 'welcome_screen.dart';
 
@@ -221,9 +222,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: Colors.blue,
               ),
               _buildFeatureCard(
-                icon: Icons.recommend,
-                title: 'Receive tailored',
-                color: Colors.purple,
+                icon: Icons.work_outline,
+                title: 'Job Match Analyzer',
+                color: Colors.teal,
               ),
               _buildFeatureCard(
                 icon: Icons.analytics,
@@ -287,10 +288,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               context,
               MaterialPageRoute(builder: (context) => const CVUploadScreen()),
             );
-          } else if (title == 'Receive tailored') {
-            _showFeatureDialog(
-              'Receive Tailored Recommendations',
-              'Get personalized CV improvement recommendations based on your industry and career goals.',
+          } else if (title == 'Job Match Analyzer') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const JobMatchScreen()),
             );
           } else if (title == 'Track progress') {
             _showFeatureDialog(
