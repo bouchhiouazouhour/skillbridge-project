@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/user.dart';
 import '../models/cv_analysis.dart';
 import '../config/app_config.dart';
@@ -88,7 +89,7 @@ class ApiService {
   }
 
   // CV Operations
-  Future<Map<String, dynamic>> uploadCV(File file) async {
+  Future<Map<String, dynamic>> uploadCV(PlatformFile file) async {
     final token = await getToken();
     if (token == null) throw Exception('Not authenticated');
 
@@ -98,7 +99,31 @@ class ApiService {
     );
 
     request.headers['Authorization'] = 'Bearer $token';
-    request.files.add(await http.MultipartFile.fromPath('cv', file.path));
+
+    // Handle both web and mobile platforms
+    if (kIsWeb) {
+      // For web: use bytes
+      if (file.bytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'cv',
+            file.bytes!,
+            filename: file.name,
+          ),
+        );
+      } else {
+        throw Exception('File bytes not available for web upload. Ensure withData: true is set when picking the file.');
+      }
+    } else {
+      // For mobile/desktop: use path
+      if (file.path != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('cv', file.path!),
+        );
+      } else {
+        throw Exception('File path not available on this platform. File path is required for mobile/desktop uploads.');
+      }
+    }
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
