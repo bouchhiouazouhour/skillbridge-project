@@ -25,6 +25,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadCVHistory();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final profile = await _apiService.getUserProfile();
+      if (profile != null) {
+        setState(() {
+          _desiredPosition = profile['desired_position'] ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error loading profile: $e');
+    }
   }
 
   Future<void> _loadCVHistory() async {
@@ -79,6 +93,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: const Text('SkillBridge'),
         backgroundColor: Colors.blue.shade700,
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -414,41 +429,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 12),
-              // Desired Position
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.work_outline,
-                      size: 16,
-                      color: Colors.blue.shade700,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _desiredPosition.isEmpty
-                          ? 'Ajouter un poste souhaité'
-                          : _desiredPosition,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: _desiredPosition.isEmpty
-                            ? Colors.grey.shade600
-                            : Colors.blue.shade700,
-                        fontWeight: _desiredPosition.isEmpty
-                            ? FontWeight.normal
-                            : FontWeight.w500,
+              // Desired Position - Clickable
+              GestureDetector(
+                onTap: () => _showEditProfileDialog(userName, userEmail),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.work_outline,
+                        size: 16,
+                        color: Colors.blue.shade700,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        _desiredPosition.isEmpty
+                            ? 'Add desired position'
+                            : _desiredPosition,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: _desiredPosition.isEmpty
+                              ? Colors.grey.shade600
+                              : Colors.blue.shade700,
+                          fontWeight: _desiredPosition.isEmpty
+                              ? FontWeight.normal
+                              : FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.edit, size: 14, color: Colors.blue.shade700),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -654,10 +674,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 TextField(
                   controller: positionController,
                   decoration: const InputDecoration(
-                    labelText: 'Poste Souhaité',
+                    labelText: 'Desired Position',
                     prefixIcon: Icon(Icons.work),
                     border: OutlineInputBorder(),
-                    hintText: 'Ex: Développeur Full Stack',
+                    hintText: 'Ex: Full Stack Developer',
                   ),
                 ),
               ],
@@ -669,19 +689,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _desiredPosition = positionController.text;
-                });
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Profil mis à jour avec succès!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+              onPressed: () async {
+                try {
+                  await _apiService.updateProfile(
+                    name: nameController.text,
+                    email: emailController.text,
+                    desiredPosition: positionController.text,
+                  );
+                  setState(() {
+                    _desiredPosition = positionController.text;
+                  });
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Profile updated successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error updating profile: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
-              child: const Text('Enregistrer'),
+              child: const Text('Save'),
             ),
           ],
         );

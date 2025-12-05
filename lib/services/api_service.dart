@@ -105,23 +105,21 @@ class ApiService {
       // For web: use bytes
       if (file.bytes != null) {
         request.files.add(
-          http.MultipartFile.fromBytes(
-            'cv',
-            file.bytes!,
-            filename: file.name,
-          ),
+          http.MultipartFile.fromBytes('cv', file.bytes!, filename: file.name),
         );
       } else {
-        throw Exception('File bytes not available for web upload. Ensure withData: true is set when picking the file.');
+        throw Exception(
+          'File bytes not available for web upload. Ensure withData: true is set when picking the file.',
+        );
       }
     } else {
       // For mobile/desktop: use path
       if (file.path != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath('cv', file.path!),
-        );
+        request.files.add(await http.MultipartFile.fromPath('cv', file.path!));
       } else {
-        throw Exception('File path not available on this platform. File path is required for mobile/desktop uploads.');
+        throw Exception(
+          'File path not available on this platform. File path is required for mobile/desktop uploads.',
+        );
       }
     }
 
@@ -224,6 +222,34 @@ class ApiService {
     } catch (e) {
       print('Error fetching CV history: $e');
       return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    required String name,
+    required String email,
+    String? desiredPosition,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/profile'),
+        headers: await getHeaders(includeAuth: true),
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'desired_position': desiredPosition ?? '',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data;
+      } else {
+        throw Exception('Failed to update profile: ${response.body}');
+      }
+    } catch (e) {
+      print('Error updating profile: $e');
+      rethrow;
     }
   }
 }
