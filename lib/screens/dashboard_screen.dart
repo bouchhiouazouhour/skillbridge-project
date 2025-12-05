@@ -264,16 +264,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'Job Match Analyzer',
                 color: Colors.teal,
               ),
-              _buildFeatureCard(
-                icon: Icons.analytics,
-                title: 'Track progress',
-                color: Colors.green,
-              ),
-              _buildFeatureCard(
-                icon: Icons.checklist,
-                title: 'CV checklist',
-                color: Colors.orange,
-              ),
             ],
           ),
         ],
@@ -357,16 +347,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               context,
               MaterialPageRoute(builder: (context) => const JobMatchScreen()),
             );
-          } else if (title == 'Track progress') {
-            _showFeatureDialog(
-              'Track Your Progress',
-              'Monitor your CV optimization journey and see improvements over time.',
-            );
-          } else if (title == 'CV checklist') {
-            _showFeatureDialog(
-              'CV Checklist',
-              'Use our comprehensive checklist to ensure your CV has all essential sections.',
-            );
           }
         },
         borderRadius: BorderRadius.circular(12),
@@ -389,37 +369,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showFeatureDialog(String title, String description) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(description),
-              const SizedBox(height: 16),
-              const Text(
-                'This feature is coming soon!',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
     );
   }
 
