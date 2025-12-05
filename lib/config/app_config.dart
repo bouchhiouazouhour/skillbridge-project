@@ -3,8 +3,16 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// Application configuration
 class AppConfig {
   // API Configuration
-  // Use 10.0.2.2 for Android emulator, 127.0.0.1 for web/desktop
+  // Priority: 1. Compile-time environment variable, 2. Platform default
+  // Usage: flutter run --dart-define=API_BASE_URL=https://your-api.com/api
+  static const String _envApiBaseUrl = String.fromEnvironment('API_BASE_URL');
+  
   static String get apiBaseUrl {
+    // Use environment variable if provided (for production builds)
+    if (_envApiBaseUrl.isNotEmpty) {
+      return _envApiBaseUrl;
+    }
+    // Default: Use 10.0.2.2 for Android emulator, 127.0.0.1 for web/desktop
     if (kIsWeb) {
       return 'http://127.0.0.1:8000/api';
     }
