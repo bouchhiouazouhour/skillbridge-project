@@ -123,12 +123,20 @@ def analyze_cv():
         
         logger.info(f"Extracted {len(cv_text)} characters from CV")
         
+        # Truncate cv_text to prevent exceeding API limits (max 15000 chars for analysis)
+        max_cv_length = 15000
+        if len(cv_text) > max_cv_length:
+            cv_text_for_analysis = cv_text[:max_cv_length] + "\n... [truncated due to length]"
+            logger.info(f"CV text truncated from {len(cv_text)} to {max_cv_length} characters")
+        else:
+            cv_text_for_analysis = cv_text
+        
         # Create enhanced prompt for CV validation and analysis
         prompt = f"""
 You are an expert CV/Resume analyst. Analyze the following document and determine if it is a valid CV/Resume.
 
 DOCUMENT CONTENT:
-{cv_text}
+{cv_text_for_analysis}
 
 STEP 1 - VALIDATION:
 First, determine if this document is actually a CV/Resume. A valid CV should contain at least 3 of these sections:

@@ -38,7 +38,7 @@ class CVParser:
         if file_obj is None:
             raise ValueError("No file provided")
         
-        filename = file_obj.filename.lower() if file_obj.filename else ""
+        filename = (file_obj.filename or '').lower()
         
         if not filename:
             raise ValueError("File has no filename")

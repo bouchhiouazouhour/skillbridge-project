@@ -55,14 +55,28 @@ class CVAnalysisController extends Controller
                 'mime' => $file->getMimeType(),
             ]);
 
-            // Forward the file to the Python NLP service
+            // Use a file stream to avoid loading large files entirely into memory
+            $fileStream = fopen($file->getRealPath(), 'r');
+            if ($fileStream === false) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to read the uploaded file.',
+                ], 500);
+            }
+
+            // Forward the file to the Python NLP service using streaming
             $response = Http::timeout(120)
                 ->attach(
                     'file',
-                    file_get_contents($file->getRealPath()),
+                    $fileStream,
                     $file->getClientOriginalName()
                 )
                 ->post("{$this->nlpServiceUrl}/analyze-cv");
+            
+            // Close the file stream
+            if (is_resource($fileStream)) {
+                fclose($fileStream);
+            }
 
             // Check if the request was successful
             if (!$response->successful()) {
