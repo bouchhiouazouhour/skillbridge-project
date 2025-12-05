@@ -4,15 +4,14 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'cv_upload_screen.dart';
-<<<<<<< HEAD
 import 'results_screen.dart';
-=======
 import 'job_offers_screen.dart';
-import 'update_skills_screen.dart';
-import 'networking_strategies_screen.dart';
 import 'job_match_screen.dart';
->>>>>>> caa2a1793e2be00f0b944ff9b7d11b689de5eba7
+import 'job_match_results_screen.dart';
+import 'networking_strategies_screen.dart';
+import 'update_skills_screen.dart';
 import '../services/api_service.dart';
+import '../models/job_match.dart';
 import 'welcome_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -28,6 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _profileImagePath;
   String _desiredPosition = '';
   List<dynamic> _cvHistory = [];
+  List<dynamic> _jobMatchHistory = [];
   int _cvCount = 0;
   double _avgScore = 0.0;
   List<Map<String, dynamic>> _profileSkills = [];
@@ -36,6 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadCVHistory();
+    _loadJobMatchHistory();
     _loadSkills();
     _loadUserProfile();
   }
@@ -108,6 +109,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _loadJobMatchHistory() async {
+    try {
+      final history = await _apiService.getJobMatchHistory();
+      setState(() {
+        _jobMatchHistory = history;
+      });
+    } catch (e) {
+      print('Error loading job match history: $e');
+    }
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -115,11 +127,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Rafraîchir les données quand on revient sur le profil
     if (index == 1) {
       _loadCVHistory();
+      _loadJobMatchHistory();
     }
   }
 
   Future<void> _logout() async {
     await _apiService.logout();
+
+    // Clear all local data
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('profile_skills');
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -267,16 +285,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'Job Match Analyzer',
                 color: Colors.teal,
               ),
-              _buildFeatureCard(
-                icon: Icons.analytics,
-                title: 'Track progress',
-                color: Colors.green,
-              ),
-              _buildFeatureCard(
-                icon: Icons.checklist,
-                title: 'CV checklist',
-                color: Colors.orange,
-              ),
             ],
           ),
         ],
@@ -360,16 +368,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               context,
               MaterialPageRoute(builder: (context) => const JobMatchScreen()),
             );
-          } else if (title == 'Track progress') {
-            _showFeatureDialog(
-              'Track Your Progress',
-              'Monitor your CV optimization journey and see improvements over time.',
-            );
-          } else if (title == 'CV checklist') {
-            _showFeatureDialog(
-              'CV Checklist',
-              'Use our comprehensive checklist to ensure your CV has all essential sections.',
-            );
           }
         },
         borderRadius: BorderRadius.circular(12),
@@ -392,37 +390,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showFeatureDialog(String title, String description) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(description),
-              const SizedBox(height: 16),
-              const Text(
-                'This feature is coming soon!',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -627,6 +594,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 'View all your uploaded CVs',
                 () {
                   _showCVHistoryDialog();
+                },
+              ),
+              _buildProfileOption(
+                Icons.work_history,
+                'Job Match History',
+                'View all your job match analyses',
+                () {
+                  _showJobMatchHistoryDialog();
                 },
               ),
               _buildProfileOption(
@@ -905,6 +880,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _showJobMatchHistoryDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.work_history, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('Job Match History'),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: _jobMatchHistory.isEmpty
+                ? const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.inbox, size: 48, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        'No job matches yet',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Your job match analyses:'),
+                      const SizedBox(height: 16),
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: _jobMatchHistory.length,
+                          itemBuilder: (context, index) {
+                            final match = _jobMatchHistory[index];
+                            final matchId = match['id'] is int
+                                ? match['id'] as int
+                                : int.parse(match['id'].toString());
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _buildJobMatchHistoryItem(
+                                matchId,
+                                match['job_title'] ?? 'Unknown Position',
+                                match['company_name'] ?? 'Unknown Company',
+                                _formatDate(match['created_at']),
+                                (match['match_score'] ?? 0).toInt(),
+                                match['match_verdict'] ?? 'unknown',
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   String _formatDate(String? dateStr) {
     if (dateStr == null) return 'Unknown date';
     try {
@@ -1014,6 +1058,154 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: Colors.grey.shade600,
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJobMatchHistoryItem(
+    int matchId,
+    String jobTitle,
+    String companyName,
+    String date,
+    int matchScore,
+    String verdict,
+  ) {
+    Color verdictColor;
+    switch (verdict.toLowerCase()) {
+      case 'strong':
+        verdictColor = Colors.green;
+        break;
+      case 'moderate':
+        verdictColor = Colors.orange;
+        break;
+      case 'weak':
+        verdictColor = Colors.red;
+        break;
+      default:
+        verdictColor = Colors.grey;
+    }
+
+    return InkWell(
+      onTap: () async {
+        print('Opening job match with ID: $matchId'); // Debug
+        Navigator.of(context).pop(); // Close dialog
+
+        try {
+          // Fetch the job match details
+          final matchData = await _apiService.getJobMatchById(matchId);
+          print('Match data received: $matchData'); // Debug
+
+          // The backend returns { success: true, job_match: {...} }
+          final jobMatchData = matchData['job_match'] ?? matchData;
+          print('Job match data: $jobMatchData'); // Debug
+
+          final jobMatch = JobMatch.fromJson(jobMatchData);
+          print(
+            'Parsed job match - Score: ${jobMatch.matchScore}, Verdict: ${jobMatch.verdict}',
+          ); // Debug
+
+          // Navigate to results screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => JobMatchResultsScreen(jobMatch: jobMatch),
+            ),
+          );
+        } catch (e) {
+          print('Error loading job match: $e');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to load job match details: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blue.shade100),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.work, color: Colors.blue.shade700),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    jobTitle,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    companyName,
+                    style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                  ),
+                  Text(
+                    date,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getScoreColor(matchScore),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$matchScore%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: verdictColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: verdictColor, width: 1),
+                  ),
+                  child: Text(
+                    verdict.toUpperCase(),
+                    style: TextStyle(
+                      color: verdictColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey.shade600,
             ),
           ],
         ),

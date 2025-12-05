@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/job_service.dart';
+import 'job_match_screen.dart';
 
 class JobOffersScreen extends StatefulWidget {
   const JobOffersScreen({super.key});
@@ -429,7 +430,7 @@ class _JobOffersScreenState extends State<JobOffersScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Footer with date and apply button
+              // Footer with date and buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -437,21 +438,55 @@ class _JobOffersScreenState extends State<JobOffersScreen> {
                     'Posted ${job.formattedDate}',
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () => _launchUrl(job.url),
-                    icon: const Icon(Icons.open_in_new, size: 16),
-                    label: const Text('Apply'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade700,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                  Row(
+                    children: [
+                      // Job Match Analyzer button
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => JobMatchScreen(
+                                prefilledJobTitle: job.title,
+                                prefilledCompanyName: job.companyName,
+                                prefilledJobDescription: job.description,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.analytics, size: 16),
+                        label: const Text('Analyze'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.blue.shade700,
+                          side: BorderSide(color: Colors.blue.shade700),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                      const SizedBox(width: 8),
+                      // Apply button
+                      ElevatedButton.icon(
+                        onPressed: () => _launchUrl(job.url),
+                        icon: const Icon(Icons.open_in_new, size: 16),
+                        label: const Text('Apply'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -598,22 +633,55 @@ class _JobOffersScreenState extends State<JobOffersScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // Apply button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _launchUrl(job.url),
-                        icon: const Icon(Icons.open_in_new),
-                        label: const Text('Apply for this Position'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    // Buttons row
+                    Row(
+                      children: [
+                        // Job Match Analyzer button
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context); // Close modal
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => JobMatchScreen(
+                                    prefilledJobTitle: job.title,
+                                    prefilledCompanyName: job.companyName,
+                                    prefilledJobDescription: job.description,
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.analytics),
+                            label: const Text('Analyze Match'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.blue.shade700,
+                              side: BorderSide(color: Colors.blue.shade700),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        // Apply button
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _launchUrl(job.url),
+                            icon: const Icon(Icons.open_in_new),
+                            label: const Text('Apply Now'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade700,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

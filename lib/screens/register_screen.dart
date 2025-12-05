@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import 'dashboard_screen.dart';
 
@@ -42,6 +43,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (mounted) {
+        // Clear old local data for new account
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('profile_skills');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

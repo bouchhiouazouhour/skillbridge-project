@@ -15,7 +15,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
   final _apiService = ApiService();
   bool _isLoading = true;
   CVAnalysis? _analysis;
-  Map<String, dynamic>? _scoreData;
   String? _error;
 
   @override
@@ -33,13 +32,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
       final results = await _apiService.getResults(widget.cvId);
       print('Results loaded: $results'); // Debug
 
-      final scoreData = await _apiService.getScore(widget.cvId);
-      print('Score data loaded: $scoreData'); // Debug
-
       if (results['analysis'] != null) {
         setState(() {
           _analysis = CVAnalysis.fromJson(results['analysis']);
-          _scoreData = scoreData;
           _isLoading = false;
         });
       } else {
@@ -276,68 +271,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
               ),
               const SizedBox(height: 24),
             ],
-            // View Insights Button
-            SizedBox(
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // Navigate to detailed insights
-                },
-                icon: const Icon(Icons.insights),
-                label: const Text(
-                  'View Detailed Insights',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Export Button
-            SizedBox(
-              height: 56,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  try {
-                    await _apiService.exportPDF(widget.cvId);
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('PDF export completed!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Export failed: ${e.toString()}'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
-                icon: const Icon(Icons.download),
-                label: const Text(
-                  'Export Optimized CV',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blue.shade700,
-                  side: BorderSide(color: Colors.blue.shade700, width: 2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),

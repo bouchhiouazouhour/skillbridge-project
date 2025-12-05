@@ -3,8 +3,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:file_picker/file_picker.dart';
-import '../models/user.dart';
-import '../models/cv_analysis.dart';
 import '../config/app_config.dart';
 
 class ApiService {
@@ -262,7 +260,6 @@ class ApiService {
     }
   }
 
-<<<<<<< HEAD
   Future<void> deleteCV(int cvId) async {
     try {
       final response = await http.delete(
@@ -276,57 +273,65 @@ class ApiService {
     } catch (e) {
       print('Error deleting CV: $e');
       rethrow;
-=======
-  // Job Match Operations
+    }
+  }
+
+  // Job Match Analysis
   Future<Map<String, dynamic>> analyzeJobMatch({
     required int cvId,
     required String jobDescription,
     String? jobTitle,
     String? companyName,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/job-match/analyze'),
-      headers: await getHeaders(includeAuth: true),
-      body: jsonEncode({
-        'cv_id': cvId,
-        'job_description': jobDescription,
-        'job_title': jobTitle,
-        'company_name': companyName,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/job/analyze'),
+        headers: await getHeaders(includeAuth: true),
+        body: jsonEncode({
+          'cv_id': cvId,
+          'job_description': jobDescription,
+          'job_title': jobTitle,
+          'company_name': companyName,
+        }),
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return jsonDecode(response.body);
-    } else {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'Failed to analyze job match');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to analyze job match: ${response.body}');
+      }
+    } catch (e) {
+      print('Error analyzing job match: $e');
+      rethrow;
     }
   }
 
-  Future<Map<String, dynamic>> saveJobMatch(int matchId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/job-match/$matchId/save'),
-      headers: await getHeaders(includeAuth: true),
-    );
+  Future<void> saveJobMatch(int matchId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/job/match/$matchId/save'),
+        headers: await getHeaders(includeAuth: true),
+      );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'Failed to save job match');
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to save job match: ${response.body}');
+      }
+    } catch (e) {
+      print('Error saving job match: $e');
+      rethrow;
     }
   }
 
   Future<List<dynamic>> getJobMatchHistory() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/job-match/history'),
+        Uri.parse('$baseUrl/job/match/history'),
         headers: await getHeaders(includeAuth: true),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['matches'] ?? [];
+        return data['matches'] ?? data['data'] ?? [];
       }
       return [];
     } catch (e) {
@@ -335,28 +340,21 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> getJobMatch(int matchId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/job-match/$matchId'),
-      headers: await getHeaders(includeAuth: true),
-    );
+  Future<Map<String, dynamic>> getJobMatchById(int matchId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/job/match/$matchId'),
+        headers: await getHeaders(includeAuth: true),
+      );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to get job match: ${response.body}');
-    }
-  }
-
-  Future<void> deleteJobMatch(int matchId) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/job-match/$matchId'),
-      headers: await getHeaders(includeAuth: true),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete job match: ${response.body}');
->>>>>>> caa2a1793e2be00f0b944ff9b7d11b689de5eba7
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to fetch job match: ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching job match: $e');
+      rethrow;
     }
   }
 }

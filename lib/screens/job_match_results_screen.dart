@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/job_match.dart';
 import '../services/api_service.dart';
+import 'dashboard_screen.dart';
 
 class JobMatchResultsScreen extends StatefulWidget {
   final JobMatch jobMatch;
@@ -20,18 +21,6 @@ class _JobMatchResultsScreenState extends State<JobMatchResultsScreen> {
   void initState() {
     super.initState();
     _isSaved = widget.jobMatch.isSaved;
-  }
-
-  Color _getVerdictColor() {
-    switch (widget.jobMatch.verdict.toLowerCase()) {
-      case 'strong':
-        return Colors.green;
-      case 'moderate':
-        return Colors.orange;
-      case 'weak':
-      default:
-        return Colors.red;
-    }
   }
 
   List<Color> _getGradientColors() {
@@ -129,17 +118,11 @@ class _JobMatchResultsScreenState extends State<JobMatchResultsScreen> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(
-                    colors: _getGradientColors(),
-                  ),
+                  gradient: LinearGradient(colors: _getGradientColors()),
                 ),
                 child: Column(
                   children: [
-                    Icon(
-                      _getVerdictIcon(),
-                      size: 64,
-                      color: Colors.white,
-                    ),
+                    Icon(_getVerdictIcon(), size: 64, color: Colors.white),
                     const SizedBox(height: 16),
                     Text(
                       '${widget.jobMatch.matchScore}%',
@@ -152,10 +135,7 @@ class _JobMatchResultsScreenState extends State<JobMatchResultsScreen> {
                     const SizedBox(height: 8),
                     Text(
                       _getVerdictMessage(),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                      ),
+                      style: const TextStyle(fontSize: 18, color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
                     if (widget.jobMatch.companyName != null) ...[
@@ -174,30 +154,134 @@ class _JobMatchResultsScreenState extends State<JobMatchResultsScreen> {
             ),
             const SizedBox(height: 24),
 
+            // Job Details Card
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Match Details',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    if (widget.jobMatch.jobTitle != null) ...[
+                      _buildInfoRow(
+                        Icons.work,
+                        'Position',
+                        widget.jobMatch.jobTitle!,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (widget.jobMatch.companyName != null) ...[
+                      _buildInfoRow(
+                        Icons.business,
+                        'Company',
+                        widget.jobMatch.companyName!,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    _buildInfoRow(
+                      Icons.insert_drive_file,
+                      'CV ID',
+                      '#${widget.jobMatch.cvId}',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(
+                      Icons.calendar_today,
+                      'Analyzed',
+                      _formatDate(widget.jobMatch.createdAt),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(
+                      Icons.assessment,
+                      'Match Score',
+                      '${widget.jobMatch.matchScore}%',
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInfoRow(
+                      Icons.verified,
+                      'Verdict',
+                      widget.jobMatch.verdict.toUpperCase(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Job Description Card
+            if (widget.jobMatch.jobDescription.isNotEmpty) ...[
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.description, color: Colors.blue, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Job Description',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      Text(
+                        widget.jobMatch.jobDescription,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade800,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
             // Your Strengths
             if (widget.jobMatch.strengths.isNotEmpty) ...[
               const Text(
                 'Your Strengths',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              ...widget.jobMatch.strengths.map((strength) => Card(
-                    color: Colors.green.shade50,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: Icon(
-                        Icons.star,
-                        color: Colors.amber.shade700,
-                      ),
-                      title: Text(
-                        strength,
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                    ),
-                  )),
+              ...widget.jobMatch.strengths.map(
+                (strength) => Card(
+                  color: Colors.green.shade50,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: Icon(Icons.star, color: Colors.amber.shade700),
+                    title: Text(strength, style: const TextStyle(fontSize: 14)),
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
             ],
 
@@ -205,28 +289,27 @@ class _JobMatchResultsScreenState extends State<JobMatchResultsScreen> {
             if (widget.jobMatch.matchingSkills.isNotEmpty) ...[
               const Text(
                 'Skills You Have',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: widget.jobMatch.matchingSkills
-                    .map((skill) => Chip(
-                          avatar: const Icon(
-                            Icons.check,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                          label: Text(
-                            skill,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          backgroundColor: Colors.green,
-                        ))
+                    .map(
+                      (skill) => Chip(
+                        avatar: const Icon(
+                          Icons.check,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          skill,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    )
                     .toList(),
               ),
               const SizedBox(height: 24),
@@ -236,28 +319,27 @@ class _JobMatchResultsScreenState extends State<JobMatchResultsScreen> {
             if (widget.jobMatch.missingSkills.isNotEmpty) ...[
               const Text(
                 'Skills You Need',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: widget.jobMatch.missingSkills
-                    .map((skill) => Chip(
-                          avatar: const Icon(
-                            Icons.close,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                          label: Text(
-                            skill,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          backgroundColor: Colors.red,
-                        ))
+                    .map(
+                      (skill) => Chip(
+                        avatar: const Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          skill,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    )
                     .toList(),
               ),
               const SizedBox(height: 24),
@@ -267,10 +349,7 @@ class _JobMatchResultsScreenState extends State<JobMatchResultsScreen> {
             if (widget.jobMatch.suggestions.isNotEmpty) ...[
               const Text(
                 'How to Improve',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               ...widget.jobMatch.suggestions.asMap().entries.map((entry) {
@@ -362,15 +441,17 @@ class _JobMatchResultsScreenState extends State<JobMatchResultsScreen> {
               height: 56,
               child: OutlinedButton.icon(
                 onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (context) => const DashboardScreen(),
+                    ),
+                    (route) => false,
+                  );
                 },
                 icon: const Icon(Icons.home),
                 label: const Text(
                   'Back to Dashboard',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.blue.shade700,
@@ -385,5 +466,61 @@ class _JobMatchResultsScreenState extends State<JobMatchResultsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.grey.shade600),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      final hours = difference.inHours;
+      final minutes = difference.inMinutes;
+      if (hours > 0) {
+        return '$hours hour${hours > 1 ? 's' : ''} ago';
+      } else if (minutes > 0) {
+        return '$minutes minute${minutes > 1 ? 's' : ''} ago';
+      } else {
+        return 'Just now';
+      }
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return '$weeks week${weeks > 1 ? 's' : ''} ago';
+    } else if (difference.inDays < 365) {
+      final months = (difference.inDays / 30).floor();
+      return '$months month${months > 1 ? 's' : ''} ago';
+    } else {
+      final years = (difference.inDays / 365).floor();
+      return '$years year${years > 1 ? 's' : ''} ago';
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import 'dashboard_screen.dart';
 
@@ -36,6 +37,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
+        // Clear old local data for clean login
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('profile_skills');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

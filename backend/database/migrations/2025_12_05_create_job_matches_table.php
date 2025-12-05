@@ -15,14 +15,19 @@ return new class extends Migration
             $table->text('job_description');
             $table->string('job_title')->nullable();
             $table->string('company_name')->nullable();
-            $table->integer('match_score'); // 0-100
-            $table->string('match_verdict'); // strong, moderate, weak
-            $table->json('matching_skills');
-            $table->json('missing_skills');
-            $table->json('improvement_suggestions');
-            $table->json('strengths');
+            $table->integer('match_score')->default(0); // 0-100
+            $table->string('match_verdict')->default('weak'); // strong, moderate, weak
+            $table->json('matching_skills')->nullable();
+            $table->json('missing_skills')->nullable();
+            $table->json('improvement_suggestions')->nullable();
+            $table->json('strengths')->nullable();
             $table->boolean('is_saved')->default(false);
             $table->timestamps();
+            
+            // Indexes
+            $table->index('user_id');
+            $table->index('cv_id');
+            $table->index('match_score');
         });
     }
 

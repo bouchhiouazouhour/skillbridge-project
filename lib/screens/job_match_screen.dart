@@ -4,7 +4,16 @@ import '../models/job_match.dart';
 import 'job_match_results_screen.dart';
 
 class JobMatchScreen extends StatefulWidget {
-  const JobMatchScreen({super.key});
+  final String? prefilledJobTitle;
+  final String? prefilledCompanyName;
+  final String? prefilledJobDescription;
+
+  const JobMatchScreen({
+    super.key,
+    this.prefilledJobTitle,
+    this.prefilledCompanyName,
+    this.prefilledJobDescription,
+  });
 
   @override
   State<JobMatchScreen> createState() => _JobMatchScreenState();
@@ -26,6 +35,17 @@ class _JobMatchScreenState extends State<JobMatchScreen> {
   void initState() {
     super.initState();
     _loadCVHistory();
+
+    // Pre-fill fields if provided
+    if (widget.prefilledJobTitle != null) {
+      _jobTitleController.text = widget.prefilledJobTitle!;
+    }
+    if (widget.prefilledCompanyName != null) {
+      _companyNameController.text = widget.prefilledCompanyName!;
+    }
+    if (widget.prefilledJobDescription != null) {
+      _jobDescriptionController.text = widget.prefilledJobDescription!;
+    }
   }
 
   @override
@@ -154,7 +174,7 @@ class _JobMatchScreenState extends State<JobMatchScreen> {
                           gradient: LinearGradient(
                             colors: [
                               Colors.blue.shade600,
-                              Colors.blue.shade800
+                              Colors.blue.shade800,
                             ],
                           ),
                         ),
@@ -296,8 +316,9 @@ class _JobMatchScreenState extends State<JobMatchScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                items: _cvHistory.map<DropdownMenuItem<int>>(
-                                    (cv) {
+                                items: _cvHistory.map<DropdownMenuItem<int>>((
+                                  cv,
+                                ) {
                                   return DropdownMenuItem<int>(
                                     value: cv['id'],
                                     child: Text(
@@ -363,8 +384,10 @@ class _JobMatchScreenState extends State<JobMatchScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.info_outline,
-                                    color: Colors.blue.shade700),
+                                Icon(
+                                  Icons.info_outline,
+                                  color: Colors.blue.shade700,
+                                ),
                                 const SizedBox(width: 8),
                                 const Text(
                                   'What you\'ll get:',
@@ -395,10 +418,7 @@ class _JobMatchScreenState extends State<JobMatchScreen> {
   Widget _buildInfoItem(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 14),
-      ),
+      child: Text(text, style: const TextStyle(fontSize: 14)),
     );
   }
 }

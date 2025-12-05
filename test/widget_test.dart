@@ -11,9 +11,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:skill/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('Welcome screen smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const SkillBridgeApp());
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
