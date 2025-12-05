@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CVController;
+use App\Http\Controllers\CVAnalysisController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,6 +16,9 @@ Route::get('/', function () {
     return response()->json(['message' => 'SkillBridge API is running', 'status' => 'ok']);
 });
 
+// NLP Service health check (public endpoint)
+Route::get('/nlp-health', [CVAnalysisController::class, 'healthCheck']);
+
 // Authentication routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -22,6 +26,9 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
+    
+    // CV Analysis route - forwards to Python NLP service
+    Route::post('/analyze-cv', [CVAnalysisController::class, 'analyze']);
     
     // CV Management routes
     Route::post('/cv/upload', [CVController::class, 'upload']);
