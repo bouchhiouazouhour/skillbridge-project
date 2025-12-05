@@ -129,7 +129,16 @@ class ApiService {
     if (response.statusCode == 201) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Upload failed: ${response.body}');
+      // Parse error response to extract user-friendly message
+      try {
+        final errorData = jsonDecode(response.body);
+        final errorMessage =
+            errorData['message'] ?? errorData['error'] ?? 'Upload failed';
+        throw Exception(errorMessage);
+      } catch (e) {
+        if (e is Exception) rethrow;
+        throw Exception('Upload failed: ${response.body}');
+      }
     }
   }
 
@@ -249,6 +258,22 @@ class ApiService {
       }
     } catch (e) {
       print('Error updating profile: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteCV(int cvId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/cv/$cvId'),
+        headers: await getHeaders(includeAuth: true),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete CV: ${response.body}');
+      }
+    } catch (e) {
+      print('Error deleting CV: $e');
       rethrow;
     }
   }

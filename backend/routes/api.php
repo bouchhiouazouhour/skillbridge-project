@@ -35,10 +35,15 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/cv/upload', [CVController::class, 'upload']);
     Route::get('/cv/history', [CVController::class, 'history']);
     Route::post('/cv/analysis', [CVController::class, 'storeAnalysis']);
+    
+    // CV specific routes (must come before delete route)
     Route::get('/cv/{id}/results', [CVController::class, 'getResults']);
     Route::get('/cv/{id}/score', [CVController::class, 'getScore']);
     Route::post('/cv/{id}/calculate-score', [CVController::class, 'calculateScore']);
     Route::get('/cv/{id}/suggestions', [CVController::class, 'getSuggestions']);
     Route::put('/cv/{id}/suggestions', [CVController::class, 'updateSuggestions']);
     Route::post('/cv/{id}/export', [CVController::class, 'exportPDF']);
+    
+    // Delete route must come last
+    Route::delete('/cv/{id}', [CVController::class, 'delete']);
 });

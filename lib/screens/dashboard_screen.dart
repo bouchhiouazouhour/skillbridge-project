@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'cv_upload_screen.dart';
+import 'results_screen.dart';
 import '../services/api_service.dart';
 import 'welcome_screen.dart';
 
@@ -761,9 +762,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           itemCount: _cvHistory.length,
                           itemBuilder: (context, index) {
                             final cv = _cvHistory[index];
+                            final cvId = cv['id'] is int
+                                ? cv['id'] as int
+                                : int.parse(cv['id'].toString());
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: _buildCVHistoryItem(
+                                cvId,
                                 cv['filename'] ?? 'Unknown',
                                 _formatDate(cv['created_at']),
                                 (cv['score'] ?? 0).toInt(),
@@ -814,52 +819,151 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Widget _buildCVHistoryItem(String filename, String date, int score) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.description, color: Colors.blue.shade700),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildCVHistoryItem(
+    int cvId,
+    String filename,
+    String date,
+    int score,
+  ) {
+    return InkWell(
+      onTap: () {
+        print('Opening CV with ID: $cvId'); // Debug
+        Navigator.of(context).pop(); // Close dialog
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ResultsScreen(cvId: cvId)),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blue.shade100),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.description, color: Colors.blue.shade700),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    filename,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    date,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Row(
               children: [
-                Text(
-                  filename,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getScoreColor(score),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$score',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                Text(
-                  date,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  color: Colors.red.shade400,
+                  iconSize: 20,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () {
+                    _confirmDeleteCV(cvId, filename);
+                  },
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey.shade600,
                 ),
               ],
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getScoreColor(score),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$score',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _confirmDeleteCV(int cvId, String filename) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete CV'),
+          content: Text(
+            'Are you sure you want to delete "$filename"?\n\nThis action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      await _deleteCV(cvId);
+    }
+  }
+
+  Future<void> _deleteCV(int cvId) async {
+    try {
+      await _apiService.deleteCV(cvId);
+
+      // Recharger l'historique
+      await _loadCVHistory();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('CV deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting CV: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Color _getScoreColor(int score) {

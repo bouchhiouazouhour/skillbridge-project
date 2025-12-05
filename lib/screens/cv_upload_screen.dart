@@ -81,17 +81,41 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
         // Navigate to results screen
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => ResultsScreen(cvId: cvId),
-          ),
+          MaterialPageRoute(builder: (context) => ResultsScreen(cvId: cvId)),
         );
       }
     } catch (e) {
       if (mounted) {
+        final errorMessage = e.toString();
+        Color bgColor = Colors.red;
+        IconData icon = Icons.error;
+
+        // Check if it's a validation error (not a CV)
+        if (errorMessage.contains('not look like a CV') ||
+            errorMessage.contains('not a valid CV') ||
+            errorMessage.contains('Missing critical sections') ||
+            errorMessage.contains('does not appear to be a CV')) {
+          bgColor = Colors.orange.shade700;
+          icon = Icons.info_outline;
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Upload failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            content: Row(
+              children: [
+                Icon(icon, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    errorMessage.replaceAll('Exception: ', ''),
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: bgColor,
+            duration: const Duration(seconds: 5),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -119,28 +143,18 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Icon
-            Icon(
-              Icons.description,
-              size: 100,
-              color: Colors.blue.shade700,
-            ),
+            Icon(Icons.description, size: 100, color: Colors.blue.shade700),
             const SizedBox(height: 24),
             // Title
             const Text(
               'Upload Your CV',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             const Text(
               'We support PDF and DOCX formats',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
@@ -149,10 +163,7 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
               elevation: 4,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: Colors.blue.shade700,
-                  width: 2,
-                ),
+                side: BorderSide(color: Colors.blue.shade700, width: 2),
               ),
               child: InkWell(
                 onTap: _isUploading ? null : _pickFile,
@@ -220,10 +231,7 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
                 icon: const Icon(Icons.upload),
                 label: const Text(
                   'Upload & Analyze',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade700,
@@ -274,10 +282,7 @@ class _CVUploadScreenState extends State<CVUploadScreen> {
   Widget _buildInfoItem(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 14),
-      ),
+      child: Text(text, style: const TextStyle(fontSize: 14)),
     );
   }
 }

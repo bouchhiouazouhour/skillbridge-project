@@ -26,11 +26,15 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   Future<void> _loadResults() async {
     try {
+      print('Loading results for CV ID: ${widget.cvId}'); // Debug
       // Simulate analysis time
       await Future.delayed(const Duration(seconds: 2));
 
       final results = await _apiService.getResults(widget.cvId);
+      print('Results loaded: $results'); // Debug
+
       final scoreData = await _apiService.getScore(widget.cvId);
+      print('Score data loaded: $scoreData'); // Debug
 
       if (results['analysis'] != null) {
         setState(() {
@@ -38,8 +42,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
           _scoreData = scoreData;
           _isLoading = false;
         });
+      } else {
+        setState(() {
+          _error = 'No analysis data found';
+          _isLoading = false;
+        });
       }
     } catch (e) {
+      print('Error loading results: $e'); // Debug
       setState(() {
         _error = e.toString();
         _isLoading = false;

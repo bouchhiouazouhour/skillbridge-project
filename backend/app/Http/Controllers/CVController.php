@@ -25,93 +25,112 @@ class CVController extends Controller
         $filename = time() . '_' . $file->getClientOriginalName();
         $path = $file->storeAs('cvs', $filename, 'local');
 
-        $cv = CV::create([
-            'user_id' => auth()->id(),
-            'filename' => $filename,
-            'file_path' => $path,
-            'original_name' => $file->getClientOriginalName(),
-            'status' => 'processing',
-        ]);
-
         try {
-            // Forward file to Python NLP service for real analysis
+            // FIRST: Validate if it's a real CV by analyzing it
             $analysisController = new CVAnalysisController();
             $analysisResult = $analysisController->analyzeFile($file);
 
-            if ($analysisResult['success']) {
-                $geminiAnalysis = $analysisResult['analysis'];
+            if (!$analysisResult['success']) {
+                // Analysis failed - determine error type
+                $errorMsg = $analysisResult['error'] ?? 'Unknown error';
+                $errorDetails = $analysisResult['details'] ?? null;
 
-                // Extract data from Gemini response
-                $skills = $geminiAnalysis['recommended_keywords'] ?? [];
-                $missingSections = $geminiAnalysis['missing_sections'] ?? [];
+                // Check if it's a validation error (not a CV)
+                $isValidationError = str_contains($errorMsg, 'not look like a CV') || 
+                                    str_contains($errorMsg, 'not a valid CV') ||
+                                    str_contains($errorMsg, 'does not appear to be');
 
-                // Convert Gemini improvements to suggestions format
-                $suggestions = [];
-                foreach ($geminiAnalysis['improvements'] ?? [] as $improvement) {
-                    if (isset($improvement['suggestion'])) {
-                        $suggestions[] = $improvement['suggestion'];
-                    }
+                // Delete the uploaded file since validation failed
+                if (Storage::disk('local')->exists($path)) {
+                    Storage::disk('local')->delete($path);
                 }
 
-                // Get scores from Gemini data
-                $atsScore = $geminiAnalysis['ats_compatibility_score'] ?? 70;
-                $overallScore = $geminiAnalysis['overall_score'] ?? 70;
-
-                // Calculate derived scores
-                $skillsScore = $this->calculateSkillsScore($skills);
-                $completenessScore = $this->calculateCompletenessScore($missingSections);
-
-                // Store REAL analysis from Gemini
-                CVAnalysis::create([
-                    'cv_id' => $cv->id,
-                    'skills' => $skills,
-                    'missing_sections' => $missingSections,
-                    'suggestions' => $suggestions,
-                    'skills_score' => $skillsScore,
-                    'completeness_score' => $completenessScore,
-                    'ats_score' => $atsScore,
-                    'score' => round($overallScore),
+                Log::warning('File upload rejected - not a valid CV', [
+                    'filename' => $file->getClientOriginalName(),
+                    'error' => $errorMsg,
                 ]);
 
-                $cv->update(['status' => 'completed']);
-
-                Log::info('CV uploaded and analyzed successfully', [
-                    'cv_id' => $cv->id,
-                    'overall_score' => $overallScore,
-                ]);
-            } else {
-                // If analysis fails, mark as failed
-                $cv->update(['status' => 'failed']);
-
-                Log::error('CV analysis failed', [
-                    'cv_id' => $cv->id,
-                    'error' => $analysisResult['error'] ?? 'Unknown error',
-                ]);
-
+                $statusCode = $isValidationError ? 422 : 500;
+                
                 return response()->json([
-                    'error' => 'CV analysis failed',
-                    'message' => $analysisResult['error'] ?? 'Unknown error',
-                    'details' => $analysisResult['details'] ?? null,
-                ], 500);
+                    'error' => $errorMsg,
+                    'message' => $errorMsg,
+                    'details' => $errorDetails,
+                ], $statusCode);
             }
-        } catch (\Exception $e) {
-            $cv->update(['status' => 'failed']);
 
-            Log::error('CV analysis exception', [
+            // SECOND: Only create CV record after successful validation
+            $cv = CV::create([
+                'user_id' => auth()->id(),
+                'filename' => $filename,
+                'file_path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'status' => 'processing',
+            ]);
+
+            // THIRD: Store the analysis results
+            $geminiAnalysis = $analysisResult['analysis'];
+
+            // Extract data from Gemini response
+            $skills = $geminiAnalysis['recommended_keywords'] ?? [];
+            $missingSections = $geminiAnalysis['missing_sections'] ?? [];
+
+            // Convert Gemini improvements to suggestions format
+            $suggestions = [];
+            foreach ($geminiAnalysis['improvements'] ?? [] as $improvement) {
+                if (isset($improvement['suggestion'])) {
+                    $suggestions[] = $improvement['suggestion'];
+                }
+            }
+
+            // Get scores from Gemini data
+            $atsScore = $geminiAnalysis['ats_compatibility_score'] ?? 70;
+            $overallScore = $geminiAnalysis['overall_score'] ?? 70;
+
+            // Calculate derived scores
+            $skillsScore = $this->calculateSkillsScore($skills);
+            $completenessScore = $this->calculateCompletenessScore($missingSections);
+
+            // Store REAL analysis from Gemini
+            CVAnalysis::create([
                 'cv_id' => $cv->id,
+                'skills' => $skills,
+                'missing_sections' => $missingSections,
+                'suggestions' => $suggestions,
+                'skills_score' => $skillsScore,
+                'completeness_score' => $completenessScore,
+                'ats_score' => $atsScore,
+                'score' => round($overallScore),
+            ]);
+
+            $cv->update(['status' => 'completed']);
+
+            Log::info('CV uploaded and analyzed successfully', [
+                'cv_id' => $cv->id,
+                'overall_score' => $overallScore,
+            ]);
+
+            return response()->json([
+                'message' => 'CV uploaded and analyzed successfully',
+                'cv' => $cv->fresh('analysis'),
+            ], 201);
+
+        } catch (\Exception $e) {
+            // Delete the uploaded file on exception
+            if (Storage::disk('local')->exists($path)) {
+                Storage::disk('local')->delete($path);
+            }
+
+            Log::error('CV upload exception', [
+                'filename' => $file->getClientOriginalName(),
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json([
-                'error' => 'CV analysis failed',
+                'error' => 'CV upload failed',
                 'message' => $e->getMessage(),
             ], 500);
         }
-
-        return response()->json([
-            'message' => 'CV uploaded and analyzed successfully',
-            'cv' => $cv->fresh('analysis'),
-        ], 201);
     }
 
     public function storeAnalysis(Request $request)
@@ -298,6 +317,27 @@ class CVController extends Controller
             'cv_id' => $cv->id,
             'filename' => 'optimized_' . $cv->original_name,
         ]);
+    }
+
+    public function delete($id)
+    {
+        $cv = CV::findOrFail($id);
+
+        if ($cv->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Delete the file from storage
+        if (Storage::disk('local')->exists($cv->file_path)) {
+            Storage::disk('local')->delete($cv->file_path);
+        }
+
+        // Delete the CV record (cascade will delete analysis)
+        $cv->delete();
+
+        return response()->json([
+            'message' => 'CV deleted successfully',
+        ], 200);
     }
 
     private function calculateSkillsScore(array $skills): int
