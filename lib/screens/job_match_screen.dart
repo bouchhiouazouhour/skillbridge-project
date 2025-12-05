@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
 import '../models/job_match.dart';
+import '../config/app_config.dart';
 import 'job_match_results_screen.dart';
 
 class JobMatchScreen extends StatefulWidget {
@@ -268,8 +269,8 @@ class _JobMatchScreenState extends State<JobMatchScreen> {
                 if (value == null || value.isEmpty) {
                   return 'Please enter a job description';
                 }
-                if (value.length < 50) {
-                  return 'Job description must be at least 50 characters';
+                if (value.length < AppConfig.minJobDescriptionLength) {
+                  return 'Job description must be at least ${AppConfig.minJobDescriptionLength} characters';
                 }
                 return null;
               },

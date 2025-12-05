@@ -35,6 +35,10 @@ model = genai.GenerativeModel('gemini-2.0-flash')
 # Supported file formats
 SUPPORTED_FORMATS = {'pdf', 'doc', 'docx'}
 
+# Minimum text length requirements
+MIN_CV_TEXT_LENGTH = 50
+MIN_JOB_DESCRIPTION_LENGTH = 50
+
 def validate_file_format(filename):
     """Validate that the file has a supported format"""
     if not filename:
@@ -114,7 +118,7 @@ def analyze_cv():
                 'error': str(e)
             }), 400
         
-        if not cv_text or len(cv_text.strip()) < 50:
+        if not cv_text or len(cv_text.strip()) < MIN_CV_TEXT_LENGTH:
             logger.warning("Not enough text extracted from CV")
             return jsonify({
                 'success': False,
@@ -365,11 +369,11 @@ def match_job():
         # Get job description
         job_description = request.form.get('job_description', '')
         
-        if not job_description or len(job_description.strip()) < 50:
+        if not job_description or len(job_description.strip()) < MIN_JOB_DESCRIPTION_LENGTH:
             logger.warning("Job description too short or missing")
             return jsonify({
                 'success': False,
-                'error': 'Job description must be at least 50 characters.'
+                'error': f'Job description must be at least {MIN_JOB_DESCRIPTION_LENGTH} characters.'
             }), 400
         
         # Parse CV to extract text
@@ -383,7 +387,7 @@ def match_job():
                 'error': str(e)
             }), 400
         
-        if not cv_text or len(cv_text.strip()) < 50:
+        if not cv_text or len(cv_text.strip()) < MIN_CV_TEXT_LENGTH:
             logger.warning("Not enough text extracted from CV")
             return jsonify({
                 'success': False,

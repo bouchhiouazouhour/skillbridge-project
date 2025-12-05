@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\Validator;
 class JobMatchController extends Controller
 {
     /**
+     * Minimum job description length for validation.
+     */
+    protected const MIN_JOB_DESCRIPTION_LENGTH = 50;
+
+    /**
      * The URL of the Python NLP service.
      */
     protected $nlpServiceUrl;
@@ -29,14 +34,16 @@ class JobMatchController extends Controller
      */
     public function analyze(Request $request)
     {
+        $minLength = self::MIN_JOB_DESCRIPTION_LENGTH;
+
         // Validate the incoming request
         $validator = Validator::make($request->all(), [
-            'job_description' => 'required|string|min:50',
+            'job_description' => "required|string|min:{$minLength}",
             'cv_id' => 'nullable|integer|exists:cvs,id',
             'cv' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ], [
             'job_description.required' => 'Please provide a job description.',
-            'job_description.min' => 'Job description must be at least 50 characters.',
+            'job_description.min' => "Job description must be at least {$minLength} characters.",
             'cv_id.exists' => 'The selected CV does not exist.',
             'cv.mimes' => 'Only PDF and DOCX files are supported.',
             'cv.max' => 'The file size must not exceed 10MB.',

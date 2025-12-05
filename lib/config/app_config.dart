@@ -15,6 +15,9 @@ class AppConfig {
   static const int maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
   static const List<String> allowedFileExtensions = ['pdf', 'docx'];
 
+  // Text validation constraints
+  static const int minJobDescriptionLength = 50;
+
   // Timeout settings
   static const Duration apiTimeout = Duration(seconds: 30);
   static const Duration uploadTimeout = Duration(minutes: 2);
