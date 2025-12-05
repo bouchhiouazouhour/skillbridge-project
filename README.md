@@ -11,7 +11,7 @@ SkillBridge is a comprehensive CV optimization application that helps users impr
 
 ```bash
 # Clone the repository
-git clone https://github.com/AmirMouelhi/Skill.git
+git clone https://github.com/bouchhiouazouhour/skillbridge-project
 cd Skill
 
 # Quick start all services
