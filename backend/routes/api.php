@@ -45,15 +45,12 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/cv/{id}/suggestions', [CVController::class, 'updateSuggestions']);
     Route::post('/cv/{id}/export', [CVController::class, 'exportPDF']);
     
-<<<<<<< HEAD
     // Delete route must come last
     Route::delete('/cv/{id}', [CVController::class, 'delete']);
-=======
     // Job Matching
     Route::post('/job-match/analyze', [JobMatchController::class, 'analyze']);
     Route::post('/job-match/{id}/save', [JobMatchController::class, 'save']);
     Route::get('/job-match/history', [JobMatchController::class, 'history']);
     Route::get('/job-match/{id}', [JobMatchController::class, 'show']);
     Route::delete('/job-match/{id}', [JobMatchController::class, 'destroy']);
->>>>>>> caa2a1793e2be00f0b944ff9b7d11b689de5eba7
 });
