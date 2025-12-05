@@ -7,6 +7,7 @@ import 'cv_upload_screen.dart';
 import 'job_offers_screen.dart';
 import 'update_skills_screen.dart';
 import 'networking_strategies_screen.dart';
+import 'job_match_screen.dart';
 import '../services/api_service.dart';
 import 'welcome_screen.dart';
 
@@ -32,6 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadCVHistory();
     _loadSkills();
+    _loadUserProfile();
   }
 
   Future<void> _loadSkills() async {
@@ -61,6 +63,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     } catch (e) {
       print('Error saving skills: $e');
+    }
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final profile = await _apiService.getUserProfile();
+      if (profile != null) {
+        setState(() {
+          _desiredPosition = profile['desired_position'] ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error loading profile: $e');
     }
   }
 
@@ -116,6 +131,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: const Text('SkillBridge'),
         backgroundColor: Colors.blue.shade700,
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -243,9 +259,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: Colors.blue,
               ),
               _buildFeatureCard(
-                icon: Icons.recommend,
-                title: 'Receive tailored',
-                color: Colors.purple,
+                icon: Icons.work_outline,
+                title: 'Job Match Analyzer',
+                color: Colors.teal,
               ),
               _buildFeatureCard(
                 icon: Icons.analytics,
@@ -335,10 +351,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               context,
               MaterialPageRoute(builder: (context) => const CVUploadScreen()),
             );
-          } else if (title == 'Receive tailored') {
-            _showFeatureDialog(
-              'Receive Tailored Recommendations',
-              'Get personalized CV improvement recommendations based on your industry and career goals.',
+          } else if (title == 'Job Match Analyzer') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const JobMatchScreen()),
             );
           } else if (title == 'Track progress') {
             _showFeatureDialog(
@@ -477,41 +493,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 12),
-              // Desired Position
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.work_outline,
-                      size: 16,
-                      color: Colors.blue.shade700,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _desiredPosition.isEmpty
-                          ? 'Ajouter un poste souhaité'
-                          : _desiredPosition,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: _desiredPosition.isEmpty
-                            ? Colors.grey.shade600
-                            : Colors.blue.shade700,
-                        fontWeight: _desiredPosition.isEmpty
-                            ? FontWeight.normal
-                            : FontWeight.w500,
+              // Desired Position - Clickable
+              GestureDetector(
+                onTap: () => _showEditProfileDialog(userName, userEmail),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.work_outline,
+                        size: 16,
+                        color: Colors.blue.shade700,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        _desiredPosition.isEmpty
+                            ? 'Add desired position'
+                            : _desiredPosition,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: _desiredPosition.isEmpty
+                              ? Colors.grey.shade600
+                              : Colors.blue.shade700,
+                          fontWeight: _desiredPosition.isEmpty
+                              ? FontWeight.normal
+                              : FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.edit, size: 14, color: Colors.blue.shade700),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -764,10 +785,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 TextField(
                   controller: positionController,
                   decoration: const InputDecoration(
-                    labelText: 'Poste Souhaité',
+                    labelText: 'Desired Position',
                     prefixIcon: Icon(Icons.work),
                     border: OutlineInputBorder(),
-                    hintText: 'Ex: Développeur Full Stack',
+                    hintText: 'Ex: Full Stack Developer',
                   ),
                 ),
               ],
@@ -779,19 +800,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _desiredPosition = positionController.text;
-                });
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Profil mis à jour avec succès!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+              onPressed: () async {
+                try {
+                  await _apiService.updateProfile(
+                    name: nameController.text,
+                    email: emailController.text,
+                    desiredPosition: positionController.text,
+                  );
+                  setState(() {
+                    _desiredPosition = positionController.text;
+                  });
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Profile updated successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error updating profile: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
-              child: const Text('Enregistrer'),
+              child: const Text('Save'),
             ),
           ],
         );
