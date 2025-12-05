@@ -163,10 +163,18 @@ class CVAnalysisController extends Controller
                     'body' => $response,
                 ]);
 
+                // Handle case where response is not valid JSON
+                $errorMessage = 'Failed to analyze CV';
+                $errorDetails = null;
+                if (is_array($analysisResult)) {
+                    $errorMessage = $analysisResult['error'] ?? $errorMessage;
+                    $errorDetails = $analysisResult['details'] ?? null;
+                }
+
                 return [
                     'success' => false,
-                    'error' => $analysisResult['error'] ?? 'Failed to analyze CV',
-                    'details' => $analysisResult['details'] ?? null,
+                    'error' => $errorMessage,
+                    'details' => $errorDetails,
                     'status_code' => $httpCode,
                 ];
             }
@@ -235,6 +243,14 @@ class CVAnalysisController extends Controller
             }
 
             $data = json_decode($response, true);
+
+            // Handle JSON decode failure
+            if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'NLP service returned invalid response',
+                ], 503);
+            }
 
             return response()->json([
                 'success' => true,
