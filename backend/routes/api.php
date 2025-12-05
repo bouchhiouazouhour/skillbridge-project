@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CVController;
 use App\Http\Controllers\CVAnalysisController;
+use App\Http\Controllers\JobMatchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,4 +41,11 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/cv/{id}/suggestions', [CVController::class, 'getSuggestions']);
     Route::put('/cv/{id}/suggestions', [CVController::class, 'updateSuggestions']);
     Route::post('/cv/{id}/export', [CVController::class, 'exportPDF']);
+
+    // Job Matching routes
+    Route::post('/job-match/analyze', [JobMatchController::class, 'analyzeMatch']);
+    Route::post('/job-match/{id}/save', [JobMatchController::class, 'saveMatch']);
+    Route::get('/job-match/history', [JobMatchController::class, 'getHistory']);
+    Route::get('/job-match/{id}', [JobMatchController::class, 'getMatch']);
+    Route::delete('/job-match/{id}', [JobMatchController::class, 'deleteMatch']);
 });
