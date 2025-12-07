@@ -12,7 +12,7 @@ SkillBridge is a comprehensive CV optimization application that helps users impr
 ```bash
 # Clone the repository
 git clone https://github.com/bouchhiouazouhour/skillbridge-project
-cd Skill
+cd skillbridge-project
 
 # Quick start all services
 ./start.sh
@@ -22,6 +22,21 @@ docker-compose up -d
 ```
 
 See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions.
+
+## 🎓 Deployment for Students
+
+**New!** If you have a GitHub Student Pack, check out our [Student Deployment Guide](DEPLOYMENT_GUIDE_STUDENT.md) for **free deployment options** including:
+- Railway ($5/month free credit)
+- Render (free tier)
+- DigitalOcean ($200 credit)
+- Vercel/Netlify (free for frontend)
+
+Use the deployment helper script:
+```bash
+./deploy.sh help          # Show available commands
+./deploy.sh check-deps    # Verify dependencies
+./deploy.sh build-web https://your-api.com/api  # Build for web
+```
 
 ## Architecture
 
